@@ -1,0 +1,25 @@
+# debuging ad optimalization
+SPEED=1
+#DEBUG=1
+#LTO=1
+
+# Program names
+CC = gcc
+CXX = g++
+LD = g++
+AR = ar
+WINDRES = $(PREFIX)windres
+RM = rm -f
+
+# Windows 95 target (gcc 4.8)
+#TUNE += -march=pentium2 -mtune=core2
+# Windows 95 target (newer gcc)
+#TUNE += -march=pentium2 -mtune=haswell
+# Windows 98/Me target (don't user mingw 4.8 - SSE target is broken!)
+#TUNE += -march=core2 -mtune=haswell
+# Do things little faster but require SSE! 
+#TUNE += -ffast-math
+# Reduce library size
+#TUNE += -fdata-sections -ffunction-sections
+# Strip debug information save some space
+#TUNE_LD=,--strip-all
