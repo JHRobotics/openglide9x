@@ -10,6 +10,14 @@ CXXSTD=gnu++11
 BASE_glide2x.dll   := 0x10000000
 BASE_glide3x.dll   := 0x10000000
 
+NULLOUT=$(if $(filter $(OS),Windows_NT),NUL,/dev/null)
+
+GIT      ?= git
+GIT_IS   := $(shell $(GIT) rev-parse --is-inside-work-tree 2> $(NULLOUT))
+ifeq ($(GIT_IS),true)
+  VERSION_BUILD := $(shell $(GIT) rev-list --count main)
+endif
+
 TARGETS = glide2x.dll glide3x.dll
 
 all: $(TARGETS)
@@ -77,6 +85,11 @@ else
 
   DEFS = -DWIN32 -DCPPDLL
   
+  ifdef VERSION_BUILD
+    DEFS  += -DOPENGLIDE9X_BUILD=$(VERSION_BUILD)
+    RDEFS += -DOPENGLIDE9X_BUILD=$(VERSION_BUILD)
+  endif
+  
   ifdef DEBUG
     DD_DEFS = -DDEBUG
   else
@@ -112,7 +125,7 @@ else
 		$(CXX) $(CXXFLAGS) -DGLIDE3 -c -o $@ $<
 	
   %.res: %.rc $(DEPS)
-		$(WINDRES) -DWINDRES --input $< --output $@ --output-format=coff
+		$(WINDRES) -DWINDRES $(RDEFS) --input $< --output $@ --output-format=coff
 	
   LIBSTATIC = ar rcs -o $@ 
 endif
@@ -170,5 +183,7 @@ clean:
 	-$(RM) $(glide3_OBJS)
 	-$(RM) glide2x.res glide2x.dll
 	-$(RM) glide3x.res glide3x.dll
+	-$(RM) *.lib
+	-$(RM) *.a
 	-cd pthread9x && $(MAKE) clean
 endif
