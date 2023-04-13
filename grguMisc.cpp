@@ -13,6 +13,7 @@
 #include "GlOgl.h"
 #include "GLRender.h"
 
+#define GLIDE_MAX_NUM_TMU 1
 
 //*************************************************
 //* Sets the External Error Function to call if
@@ -335,17 +336,26 @@ FX_ENTRY void FX_CALL grFlush ( void )
 FxU32 grGet_fill_buffer(FxI32 *dst, FxU32 dstlen, const FxI32 *src, FxU32 srclen)
 {
 	FxU32 n = 0; 
-	while(dstlen != 0)
+	while(dstlen >= 4)
 	{
 		*dst = *src;
 		dst++;
 		src++;
-		dstlen--;
+		dstlen -= 4;
 		n++;
 	}
 	
 	return n;
 }
+
+void grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
+{
+	if(dstlen >= 4)
+	{
+		*dst = n;
+	}
+}
+
 
 FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 {
@@ -364,7 +374,8 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*1 4
 			The number of bits for each channel in the gamma table. If gamma correction is not available,
 			grGet will fail, and the params array will be unmodified.*/
-			break;
+			grGet_fill_num(plength, params, 8);
+			return FXTRUE;
 		case GR_FIFO_FULLNESS:
 			/*2 8
 			How full the FIFO is, as a percentage. The value is returned in two forms: 1.24 fixed point and a hardware-specific format. */
@@ -377,7 +388,8 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*1 4
 			The number of entries in the hardware gamma table. Returns FXFALSE if it is not possible to manipulate gamma
 			(e.g. on a Macronix card, or in windowed mode).*/
-			break;
+			grGet_fill_num(plength, params, 256);
+			return FXTRUE;
 		case GR_GLIDE_STATE_SIZE:
 			/*1 4
 			Size of buffer, in bytes, needed to save Glide state. See grGlideGetState.*/
@@ -400,11 +412,13 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_MAX_TEXTURE_SIZE:
 			/* 1 4
 			The width of the largest texture supported on this configuration (e.g. Voodoo Graphics returns 256). */
-			break;
+			grGet_fill_num(plength, params, 256);
+			return FXTRUE;
 		case GR_MAX_TEXTURE_ASPECT_RATIO:
 			 /* 1 4
 			 The logarithm base 2 of the maximum aspect ratio supported for power-of-two, mipmap-able textures (e.g. Voodoo Graphics returns 3). */
-			 break;
+			 grGet_fill_num(plength, params, 3);
+			 return FXTRUE;
 		case GR_MEMORY_FB:
 			/* 1 4
 			The total number of bytes per Pixelfx chip if a non-UMA configuration is used, else 0. In non-UMA configurations, the total FB memory is GR_MEMORY_FB * GR_NUM_FB.*/
@@ -416,7 +430,8 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_MEMORY_UMA:
 			/* 1 4
 			The total number of bytes if a UMA configuration, else 0. */
-			break;
+			grGet_fill_num(plength, params, 4);
+			return FXTRUE;
 		case GR_NON_POWER_OF_TWO_TEXTURES:
 			/* 1 4
 			Returns FXTRUE if this configuration supports textures with arbitrary width and height (up to the maximum). Note that only power-of-two textures may be mipmapped. Not implemented in the initial release of Glide 3.0. */
@@ -424,11 +439,14 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_NUM_BOARDS:
 			/* 1 4
 			The number of installed boards supported by Glide. Valid before a call to grSstWinOpen.*/
-			break;
+			grGet_fill_num(plength, params, 1);
+			return FXTRUE;
+			//break;
 		case GR_NUM_FB:
 			/*1 4
 			The number of Pixelfx chips present. This number will always be 1 except for SLI configurations.*/
-			break;
+			grGet_fill_num(plength, params, 1);
+			return FXTRUE;
 		case GR_NUM_SWAP_HISTORY_BUFFER:
 			/* 1 4
 			Number of entries in the swap history buffer. Each entry is 4 bytes long. */
@@ -436,7 +454,8 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_NUM_TMU:
 			/* 1 4
 			The number of Texelfx chips per Pixelfx chip. For integrated chips, the number of TMUs will be returned.*/
-			break;
+			grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU);
+			return FXTRUE;
 		case GR_PENDING_BUFFERSWAPS:
 			/* 1 4
 			The number of buffer swaps pending. */
@@ -496,7 +515,8 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_TEXTURE_ALIGN:
 			/*1 4
 			The alignment boundary for textures. For example, if textures must be 16-byte aligned, 0x10 would be returned.*/
-			break;
+			grGet_fill_num(plength, params, 256); /*256;*/
+			return FXTRUE;
 		case GR_VIDEO_POSITION:
 			/*2 8
 			Vertical and horizontal beam location. Vertical retrace is indicated by y == 0.*/
@@ -540,7 +560,7 @@ FX_ENTRY const char * FX_CALL grGetString( FxU32 pname )
 		return string_tables[pname - GR_EXTENSION];
 	}
 	
-	return NULL;
+	return "";
 }
 
 FX_ENTRY void FX_CALL grGlideGetVertexLayout( void *layout ){ }

@@ -28,6 +28,7 @@
 static HDC   hDC;
 static HGLRC hRC;
 static HWND  hWND;
+static HWND  hWNDDraw = NULL; /* child window */
 static struct
 {
     FxU16 red[ 256 ];
@@ -37,29 +38,6 @@ static struct
 
 static BOOL ramp_stored  = false;
 static BOOL mode_changed = false;
-static HHOOK win_hook = NULL;
-
-/* Hook proc for glide window to hide annoing cursor pointer */
-LRESULT WINAPI GlideHookProc(int code, WPARAM wParam, LPARAM lParam)
-{
-	/* If nCode is greater than or equal to HC_ACTION, we should process the message. */
-	if (code >= HC_ACTION)
-	{
-		const LPCWPRETSTRUCT lpcwprs = (LPCWPRETSTRUCT)lParam;
-		switch (lpcwprs->message)
-		{
-			case WM_SETCURSOR:
-				SetCursor(NULL);
-				return 0; /* stop drawing the cursor by some function in chain */
-				break;
-			case WM_DESTROY:
-				UnhookWindowsHookEx(win_hook);
-				win_hook = NULL;
-				break;
-		}
-	}
-	return CallNextHookEx(win_hook, code, wParam, lParam); 
-}
 
 typedef BOOL (WINAPI * GLIDE_PFNWGLSWAPINTERVALEXTPROC) (int interval);
 
@@ -87,47 +65,63 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
         hwnd = GetActiveWindow();
     }
 
-    if ( hwnd == NULL )
+    /*if ( hwnd == NULL )
     {
         MessageBox( NULL, "NULL window specified", "Error", MB_OK );
         exit( 1 );
-    }
+    }*/
+    // if we haven window we will create some
 
     mode_changed = false;
-
-    if ( UserConfig.InitFullScreen )
+    
+    hWND = hwnd;
+    
+    if(hwnd == NULL)
     {
-        SetWindowLong( hwnd, 
-                       GWL_STYLE, 
-                       WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS );
-        MoveWindow( hwnd, 0, 0, width, height, false );
-        mode_changed = SetScreenMode( width, height );
-
+    	int pos_x = 0;
+    	int pos_y = 0;
+    	if(!UserConfig.InitFullScreen)
+    	{
+    		pos_x = x;
+    		pos_y = y;
+    	}
+    	
+    	hWNDDraw = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide fake window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS|WS_VISIBLE, pos_x, pos_y, width, height, NULL, NULL, glideDLLInt, NULL);
     }
     else
     {
-       RECT rect;
-       rect.left = 0;
-       rect.right = width;
-       rect.top = 0;
-       rect.bottom = height;
-
-       AdjustWindowRectEx( &rect, 
-                           GetWindowLong( hwnd, GWL_STYLE ),
-                           GetMenu( hwnd ) != NULL,
-                           GetWindowLong( hwnd, GWL_EXSTYLE ) );
-       MoveWindow( hwnd, 
-                   x, y, 
-                   x + ( rect.right - rect.left ),
-                   y + ( rect.bottom - rect.top ),
-                   true );
+			if (UserConfig.InitFullScreen)
+	    {
+	        SetWindowLong( hwnd, GWL_STYLE,  WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS );
+	        MoveWindow(hwnd, 0, 0, width, height, false);
+	    }
+	    else
+	    {
+	       RECT rect;
+	       rect.left = 0;
+	       rect.right = width;
+	       rect.top = 0;
+	       rect.bottom = height;
+	
+	       AdjustWindowRectEx(&rect, GetWindowLong(hwnd, GWL_STYLE), GetMenu(hwnd) != NULL, GetWindowLong(hwnd, GWL_EXSTYLE));
+	       MoveWindow(hwnd, x, y, x + ( rect.right - rect.left ), y + ( rect.bottom - rect.top ), true);
+	    }
+    	
+    	hWNDDraw = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide fake window", WS_CHILD | WS_VISIBLE, 0, 0, width, height, hwnd, NULL, glideDLLInt, NULL);
+    }
+    
+    if(hWNDDraw == NULL)
+    {
+    	MessageBox( NULL, "Failed to create child windows!", "Error", MB_OK);
+    	exit(1);
+    }
+    
+    if(UserConfig.InitFullScreen)
+    {
+      mode_changed = SetScreenMode( width, height );
     }
 
-    hWND = hwnd;
-
-    win_hook = SetWindowsHookExA(WH_CALLWNDPROC, GlideHookProc, NULL, GetCurrentThreadId());
-
-    hDC = GetDC( hwnd );
+    hDC = GetDC( hWNDDraw );
     BitsPerPixel = GetDeviceCaps( hDC, BITSPIXEL );
 
     ZeroMemory( &pfd, sizeof( pfd ) );
@@ -186,16 +180,13 @@ void FinaliseOpenGLWindow( void)
 
         ReleaseDC( NULL, pDC );
     }
-    
-    if(win_hook)
-    {
-        UnhookWindowsHookEx(win_hook);
-        win_hook = NULL;
-    }
 
     wglMakeCurrent( NULL, NULL );
     wglDeleteContext( hRC );
-    ReleaseDC( hWND, hDC );
+    ReleaseDC( hWNDDraw, hDC );
+    
+    DestroyWindow(hWNDDraw);
+    hWNDDraw = NULL;
 
     if( mode_changed )
     {
@@ -226,10 +217,6 @@ void SetGamma(float value)
     ReleaseDC( NULL, pDC );
 }
 
-void RestoreGamma()
-{
-}
-
 bool SetScreenMode(int &xsize, int &ysize)
 {
     HDC     hdc;
@@ -237,9 +224,9 @@ bool SetScreenMode(int &xsize, int &ysize)
     bool    found;
     DEVMODE DevMode;
 
-    hdc = GetDC( hWND );
+    hdc = GetDC( hWNDDraw );
     bits_per_pixel = GetDeviceCaps( hdc, BITSPIXEL );
-    ReleaseDC( hWND, hdc );
+    ReleaseDC( hWNDDraw, hdc );
     
     found = false;
     DevMode.dmSize = sizeof( DEVMODE );

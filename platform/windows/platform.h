@@ -44,4 +44,8 @@ typedef int (__stdcall *ExtFn)();
 
 #endif
 
+extern HINSTANCE glideDLLInt;
+
+#define GLIDE_WND_CLASS_NAME "openglidewin"
+
 #endif // WIN32

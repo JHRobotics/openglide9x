@@ -8,6 +8,8 @@
 *.gen
 *.exe
 *.res
+*.dll
+*.a
 
 # release and testing scripts
 *.bat

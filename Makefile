@@ -91,7 +91,7 @@ else
   endif
   
   ifdef DEBUG
-    DD_DEFS = -DDEBUG
+    DD_DEFS = -DDEBUG -DOGL_NOTDONE
   else
     DD_DEFS = -DNDEBUG
   endif

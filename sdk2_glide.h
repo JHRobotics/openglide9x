@@ -979,8 +979,8 @@ FX_ENTRY FxBool FX_CALL
 grSstIsBusy( void );
 #endif /* !GLIDE3_ALPHA */
 
-FX_ENTRY FxBool FX_CALL 
-grSstWinOpen(
+#ifndef GLIDE3
+FX_ENTRY FxBool FX_CALL  grSstWinOpen(
           FxU                  hWnd,
           GrScreenResolution_t screen_resolution,
           GrScreenRefresh_t    refresh_rate,
@@ -989,8 +989,22 @@ grSstWinOpen(
           int                  nColBuffers,
           int                  nAuxBuffers);
 
-FX_ENTRY void FX_CALL
-grSstWinClose( void );
+
+FX_ENTRY void FX_CALL grSstWinClose( void );
+#else
+
+FX_ENTRY FxU32 FX_CALL  grSstWinOpen(
+          FxU                  hWnd,
+          GrScreenResolution_t screen_resolution,
+          GrScreenRefresh_t    refresh_rate,
+          GrColorFormat_t      color_format,
+          GrOriginLocation_t   origin_location,
+          int                  nColBuffers,
+          int                  nAuxBuffers);
+
+
+FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx );
+#endif
 
 FX_ENTRY FxBool FX_CALL
 grSstControl( FxU32 code );

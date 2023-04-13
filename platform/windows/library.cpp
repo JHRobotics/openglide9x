@@ -14,6 +14,43 @@
 #include "platform.h"
 #include "GlOgl.h"
 
+LRESULT CALLBACK DrawWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch(message)
+	{
+		case WM_CREATE:
+		  //PostQuitMessage(0);
+			break;
+		case WM_SETCURSOR:
+			SetCursor(NULL);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	
+	return 0;
+}
+
+HINSTANCE glideDLLInt = NULL;
+
+BOOL registerWinClass()
+{
+	WNDCLASS wc      = {0};
+	wc.lpfnWndProc   = DrawWndProc;
+	wc.hInstance     = glideDLLInt;
+	wc.hbrBackground = (HBRUSH)(COLOR_BACKGROUND);
+	wc.lpszClassName = GLIDE_WND_CLASS_NAME;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	
+	printf("RegisterClass!\n");
+	if( !RegisterClass(&wc) )
+	{
+		return TRUE;
+	}
+	
+	return FALSE;
+}
+
 BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
 {
     int Priority;
@@ -28,6 +65,9 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         {
             return false;
         }
+        glideDLLInt = hinstDLL;
+        registerWinClass();
+        
         InitMainVariables( );
 
         if ( SetPriorityClass( GetCurrentProcess( ), NORMAL_PRIORITY_CLASS ) == 0 )

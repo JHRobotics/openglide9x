@@ -144,7 +144,11 @@ grGlideShutdown( void )
     GlideMsg( "grGlideShutdown()\n" );
 #endif
 
+#ifdef GLIDE3
+    grSstWinClose( 1 );
+#else
     grSstWinClose( );
+#endif
 
     RenderFree( );
     delete Textures;
@@ -237,6 +241,7 @@ grSstQueryBoards( GrHwConfiguration *hwConfig )
 }
 
 //*************************************************
+#ifndef GLIDE3
 FX_ENTRY FxBool FX_CALL
 grSstWinOpen(   FxU hwnd,
                 GrScreenResolution_t res,
@@ -245,10 +250,24 @@ grSstWinOpen(   FxU hwnd,
                 GrOriginLocation_t org_loc,
                 int num_buffers,
                 int num_aux_buffers )
+#else
+FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
+                GrScreenResolution_t res,
+                GrScreenRefresh_t ref,
+                GrColorFormat_t cformat,
+                GrOriginLocation_t org_loc,
+                int num_buffers,
+                int num_aux_buffers )
+#endif
+
 {
     if ( OpenGL.WinOpen )
     {
-        grSstWinClose( );
+#ifdef GLIDE3
+    grSstWinClose( 1 );
+#else
+    grSstWinClose( );
+#endif
     }
 
 #ifdef OGL_DONE
@@ -420,21 +439,36 @@ grSstWinOpen(   FxU hwnd,
         InternalConfig.NoSplash = true;
     }
 
+#ifndef GLIDE3
     return FXTRUE;
+#else
+		return 1;
+#endif
 }
 
 //*************************************************
 //* Close the graphics display device
 //*************************************************
-FX_ENTRY void FX_CALL
-grSstWinClose( void )
+#ifndef GLIDE3
+FX_ENTRY void FX_CALL grSstWinClose( void )
+#else
+FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
+#endif
 {
+#ifdef GLIDE3
+	if(ctx != 1) return FXFALSE;
+#endif
+	
 #ifdef OGL_DONE
     GlideMsg( "grSstWinClose()\n" );
 #endif
     if ( ! OpenGL.WinOpen )
     {
+    	#ifdef GLIDE3
+    	 return FXFALSE;
+    	#else
         return;
+      #endif
     }
 
     OpenGL.WinOpen = false;
@@ -483,6 +517,11 @@ grSstWinClose( void )
     delete[] Glide.SrcBuffer.Address;
     delete[] Glide.DstBuffer.Address;
     delete[] OpenGL.tmpBuf;
+
+
+#ifdef GLIDE3
+	return FXTRUE;
+#endif
 }
 
 //*************************************************
