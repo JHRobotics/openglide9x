@@ -83,7 +83,7 @@ else
   
   INCLUDE = -Iplatform\windows -I.
 
-  DEFS = -DWIN32 -DCPPDLL
+  DEFS = -DWIN32 -DCPPDLL -DHAVE_MMX
   
   ifdef VERSION_BUILD
     DEFS  += -DOPENGLIDE9X_BUILD=$(VERSION_BUILD)

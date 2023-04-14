@@ -48,4 +48,6 @@ extern HINSTANCE glideDLLInt;
 
 #define GLIDE_WND_CLASS_NAME "openglidewin"
 
+BOOL RegisterWinClass();
+
 #endif // WIN32

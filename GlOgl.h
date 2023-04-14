@@ -251,42 +251,24 @@ struct OpenGLStruct
     FxU32                   *tmpBuf;
 };
 
+#define OGL_CFG_BOOL(_name, _def, _des)              bool _name;
+#define OGL_CFG_FLOAT(_name, _def, _min, _max, _dec) float _name;
+#define OGL_CFG_INT(_name, _def, _min, _max, _dec)   int   _name;
+
 struct ConfigStruct
 {
-    int     OGLVersion;
-    int     Priority;
-    int     TextureMemorySize;
-    int     FrameBufferMemorySize;
-
-    float   Resolution;
-
-    bool    FogEnable;
-    bool    InitFullScreen;
-    bool    PrecisionFix;
-    bool    EnableMipMaps;
-    bool    BuildMipMaps;
-    bool    IgnorePaletteChange;
-    bool    Wrap565to5551;
-    bool    TextureEnv;
-    bool    MMXEnable;
-    bool    CreateWindow;
-
-    bool    EXT_secondary_color;
-    bool    ARB_multitexture;
-    bool    EXT_fog_coord;
-    bool    EXT_texture_env_add;
-    bool    EXT_texture_env_combine;
-    bool    EXT_texture_lod_bias;
-    bool    SGIS_generate_mipmap;
-    bool    EXT_paletted_texture;
-    bool    EXT_vertex_array;
-    bool    EXT_blend_func_separate;
-
-    bool    NoSplash;
-    bool    ShamelessPlug;
-    
-    bool    Logging;
+	int OGLVersion;
+	bool EXT_secondary_color;
+	bool EXT_texture_lod_bias;
+	bool TextureEnv;
+	
+#include "GLconf.h"
 };
+
+#undef OGL_CFG_BOOL
+#undef OGL_CFG_FLOAT
+#undef OGL_CFG_INT
+
 
 // Extern variables
 extern const char *         OpenGLideVersion;

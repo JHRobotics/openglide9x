@@ -180,70 +180,32 @@ bool OGLIsExtensionSupported( const char * extension, int gl_version, int in_ver
     return false;
 }
 
-void ResetInternalConfig( void )
-{
-    InternalConfig.OGLVersion                   = 1;
-    InternalConfig.Priority                     = 2;
 
-    InternalConfig.FogEnable                    = false;
-    InternalConfig.InitFullScreen               = true;
-    InternalConfig.PrecisionFix                 = false;
-    InternalConfig.EnableMipMaps                = false;
-    InternalConfig.BuildMipMaps                 = false;
-    InternalConfig.IgnorePaletteChange          = false;
-    InternalConfig.Wrap565to5551                = false;
-    InternalConfig.TextureEnv                   = false;
 
-    InternalConfig.ARB_multitexture             = false;
-    InternalConfig.EXT_paletted_texture         = false;
-    InternalConfig.EXT_texture_env_add          = false;
-    InternalConfig.EXT_texture_env_combine      = false;
-    InternalConfig.EXT_vertex_array             = false;
-    InternalConfig.EXT_fog_coord                = false;
-    InternalConfig.EXT_blend_func_separate      = false;
-    InternalConfig.EXT_texture_lod_bias         = false;
-    InternalConfig.EXT_secondary_color          = false;
 
-    InternalConfig.TextureMemorySize            = 16;
-    InternalConfig.FrameBufferMemorySize        = 8;
-
-    InternalConfig.MMXEnable                    = false;
-    InternalConfig.CreateWindow                 = false;
-    InternalConfig.Logging                      = false;
-}
+#define OGL_CFG_BOOL(_name, _def, _des)              InternalConfig._name = UserConfig._name;
+#define OGL_CFG_FLOAT(_name, _def, _min, _max, _dec) InternalConfig._name = _def; if(UserConfig._name >= (_min) && UserConfig._name <= (_max)){InternalConfig._name = UserConfig._name;}
+#define OGL_CFG_INT(_name, _def, _min, _max, _dec)   InternalConfig._name = _def; if(UserConfig._name >= (_min) && UserConfig._name <= (_max)){InternalConfig._name = UserConfig._name;}
 
 void ValidateUserConfig( void )
 {
-    ResetInternalConfig( );
+	memset(&InternalConfig, 0, sizeof(InternalConfig));
+	
+#include "GLconf.h"
 
-    InternalConfig.InitFullScreen               = UserConfig.InitFullScreen;
-    InternalConfig.PrecisionFix                 = UserConfig.PrecisionFix;
-    InternalConfig.EnableMipMaps                = UserConfig.EnableMipMaps;
-    InternalConfig.IgnorePaletteChange          = UserConfig.IgnorePaletteChange;
-    InternalConfig.Wrap565to5551                = UserConfig.Wrap565to5551;
-    InternalConfig.Logging                      = UserConfig.Logging;
-    
-    if ( ( UserConfig.TextureMemorySize >= OGL_MIN_TEXTURE_BUFFER ) && 
-         ( UserConfig.TextureMemorySize <= OGL_MAX_TEXTURE_BUFFER ) )
-    {
-        InternalConfig.TextureMemorySize        = UserConfig.TextureMemorySize;
-    }
+#undef OGL_CFG_BOOL
+#undef OGL_CFG_FLOAT
+#undef OGL_CFG_INT
 
-    if ( ( UserConfig.FrameBufferMemorySize >= OGL_MIN_FRAME_BUFFER ) && 
-         ( UserConfig.FrameBufferMemorySize <= OGL_MAX_FRAME_BUFFER ) )
-    {
-        InternalConfig.FrameBufferMemorySize    = UserConfig.FrameBufferMemorySize;
-    }
+	GlideMsg( OGL_LOG_SEPARATE );
+	GlideMsg( "** OpenGL Information **\n" );
+	GlideMsg( OGL_LOG_SEPARATE );
+	GlideMsg( "Vendor:      %s\n", glGetString( GL_VENDOR ) );
+	GlideMsg( "Renderer:    %s\n", glGetString( GL_RENDERER ) );
+	GlideMsg( "Version:     %s\n", glGetString( GL_VERSION ) );
+	GlideMsg( "Extensions:  %s\n", glGetString( GL_EXTENSIONS ) );
 
-    GlideMsg( OGL_LOG_SEPARATE );
-    GlideMsg( "** OpenGL Information **\n" );
-    GlideMsg( OGL_LOG_SEPARATE );
-    GlideMsg( "Vendor:      %s\n", glGetString( GL_VENDOR ) );
-    GlideMsg( "Renderer:    %s\n", glGetString( GL_RENDERER ) );
-    GlideMsg( "Version:     %s\n", glGetString( GL_VERSION ) );
-    GlideMsg( "Extensions:  %s\n", glGetString( GL_EXTENSIONS ) );
-
-    GlideMsg( OGL_LOG_SEPARATE );
+	GlideMsg( OGL_LOG_SEPARATE );
 
 	int ver    = 0;
 	int subver = 0;
@@ -252,8 +214,8 @@ void ValidateUserConfig( void )
 
 	InternalConfig.OGLVersion = OGL_VER(ver, subver); //ver * 100 + subver;
 
-    GlideMsg( "OpenGL Extensions:\n" );
-    GlideMsg( OGL_LOG_SEPARATE );
+ 	GlideMsg( "OpenGL Extensions:\n" );
+  GlideMsg( OGL_LOG_SEPARATE );
 
     int index = 0;
     while ( strlen( glNecessaryExt[ index ].name ) > 0 )
@@ -263,7 +225,7 @@ void ValidateUserConfig( void )
         case OGL_EXT_REQUIRED:
             if ( ! OGLIsExtensionSupported( glNecessaryExt[ index ].name, InternalConfig.OGLVersion, glNecessaryExt[index].buildin_version) )
             {
-				char szError[ 256 ];
+                char szError[ 256 ];
                 sprintf( szError, "Severe Problem: OpenGL %s extension is required for OpenGLide!", 
                     glNecessaryExt[ index ].name );
                 Error( szError );
@@ -279,6 +241,8 @@ void ValidateUserConfig( void )
                 sprintf( szError, "Note: OpenGL %s extension is not supported, emulating behavior.\n", 
                     glNecessaryExt[ index ].name );
                 GlideMsg( szError );
+                
+                *glNecessaryExt[ index ].internalVar = false;
             }
             else
             {
@@ -314,11 +278,20 @@ void ValidateUserConfig( void )
     {
         InternalConfig.TextureEnv   = true;
     }
+    else
+    {
+    	InternalConfig.TextureEnv   = false;
+    }
 
     if ( InternalConfig.EXT_fog_coord )
     {
         InternalConfig.FogEnable    = true;
     }
+    else
+    {
+        InternalConfig.FogEnable    = false;
+    }
+    
 
     if ( DetectMMX( ) )
     {

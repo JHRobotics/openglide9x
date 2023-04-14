@@ -10,6 +10,8 @@
 
 #include "openglide9x.h"
 
+CURSOR_TRANSPARENT CURSOR "resource/cursor.cur"
+
 1 VERSIONINFO
 FILEVERSION 3,3,0,15167
 PRODUCTVERSION 3,3,0,15167

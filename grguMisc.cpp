@@ -333,7 +333,7 @@ FX_ENTRY void FX_CALL grFlush ( void )
 	
 }
 
-FxU32 grGet_fill_buffer(FxI32 *dst, FxU32 dstlen, const FxI32 *src, FxU32 srclen)
+static inline FxU32 grGet_fill_buffer(FxI32 *dst, FxU32 dstlen, const FxI32 *src, FxU32 srclen)
 {
 	FxU32 n = 0; 
 	while(dstlen >= 4)
@@ -348,7 +348,7 @@ FxU32 grGet_fill_buffer(FxI32 *dst, FxU32 dstlen, const FxI32 *src, FxU32 srclen
 	return n;
 }
 
-void grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
+static inline void grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
 {
 	if(dstlen >= 4)
 	{

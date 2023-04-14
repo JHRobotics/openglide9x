@@ -27,8 +27,8 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
 
-
-const char * OpenGLideVersion = "0.09rc9";
+#include "openglide9x.h"
+const char * OpenGLideVersion = OPENGLIDE9X_VERSION_STR; /*"0.09rc9";*/
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -75,6 +75,8 @@ void InitMainVariables( void )
 
 bool InitWindow( FxU hWnd )
 {
+		char Path[MAX_PATH];
+		
     if ( !InitialiseOpenGLWindow( hWnd, 0, 0,  OpenGL.WindowWidth, OpenGL.WindowHeight ) ) {
         Error( "Failed to Initialise OpenGL Window!\n" );
         return false;
@@ -84,7 +86,17 @@ bool InitWindow( FxU hWnd )
         ReportWarning("You are running in a Non-Accelerated OpenGL!!!\nThings can become really slow");
 
     ValidateUserConfig( );
-
+    GlideMsg( OGL_LOG_SEPARATE );
+#ifdef _WIN32
+    GetModuleFileNameA(NULL, Path, PATH_MAX-1);;
+		Path[PATH_MAX-1] = '\0';
+		GlideMsg( "Application EXE: %s\n", Path);
+		
+		GetModuleFileNameA(glideDLLInt, Path, PATH_MAX-1);;
+		Path[PATH_MAX-1] = '\0';
+		GlideMsg( "OpenGlide DLL: %s\n", Path);
+#endif
+    
     GlideMsg( OGL_LOG_SEPARATE );
     GlideMsg( " Setting in Use: \n" );
     GlideMsg( OGL_LOG_SEPARATE );

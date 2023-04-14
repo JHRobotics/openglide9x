@@ -31,6 +31,9 @@ ConfigStruct    InternalConfig;
 // Extern prototypes
 extern unsigned long    NumberOfErrors;
 
+const char *reg_config_path = "SOFTWARE\\OpenGlide";
+HKEY        reg_config_key  = HKEY_LOCAL_MACHINE;
+
 // Functions
 
 VARARGDECL(void) GlideMsg( const char *szString, ... )
@@ -258,6 +261,92 @@ static char * FindConfig( const char *IniFile, const char *IniConfig )
     return Find;
 }
 
+static char *FindConfigReg(const char *exe, const char *IniConfig)
+{
+	char keybuf[MAX_PATH];
+	static char retbuf[MAX_PATH];
+	HKEY hKey;
+	DWORD type;
+	DWORD size;
+	bool rc = false;
+	
+	strcpy(keybuf, reg_config_path);
+	strcat(keybuf, "\\");
+	strcat(keybuf, exe);
+	
+	LSTATUS lResult = RegOpenKeyEx(reg_config_key, keybuf, 0, KEY_READ, &hKey);
+	if(lResult == ERROR_SUCCESS)
+	{
+		size = MAX_PATH;
+		lResult = RegQueryValueExA(hKey, IniConfig, NULL, &type, (LPBYTE)keybuf, &size);
+		if(lResult == ERROR_SUCCESS)
+	  {
+	  	switch(type)
+	   	{
+				case REG_SZ:
+				case REG_MULTI_SZ:
+				case REG_EXPAND_SZ:
+				{
+					memcpy(retbuf, keybuf, size-1);
+					keybuf[size] = '\0';
+					rc = true;
+					break;
+				}
+				case REG_DWORD:
+				{
+					DWORD temp_dw = *((LPDWORD)keybuf);
+					sprintf(retbuf, "%lu", temp_dw);
+					rc = true;
+					break;
+				}
+			}
+		}
+			
+		RegCloseKey(hKey);
+	}
+	
+	if(!rc)
+	{
+		strcpy(keybuf, reg_config_path);
+		strcat(keybuf, "\\global");
+		
+		LSTATUS lResult = RegOpenKeyEx(reg_config_key, keybuf, 0, KEY_READ, &hKey);
+		if(lResult == ERROR_SUCCESS)
+		{
+			size = MAX_PATH;
+			lResult = RegQueryValueExA(hKey, IniConfig, NULL, &type, (LPBYTE)keybuf, &size);
+			if(lResult == ERROR_SUCCESS)
+		  {
+		  	switch(type)
+		   	{
+					case REG_SZ:
+					case REG_MULTI_SZ:
+					case REG_EXPAND_SZ:
+					{
+						memcpy(retbuf, keybuf, size-1);
+						keybuf[size] = '\0';
+						rc = true;
+						break;
+					}
+					case REG_DWORD:
+					{
+						DWORD temp_dw = *((LPDWORD)keybuf);
+						sprintf(retbuf, "%lu", temp_dw);
+						rc = true;
+						break;
+					}
+				}
+			}
+				
+			RegCloseKey(hKey);
+		}
+	}
+	
+	if(rc) return retbuf;
+	
+	return NULL;
+}
+
 #ifdef VBOX_GLIDE_WITH_IPRT 
 int vbox_access(char const* FileName, int AccessMode)
 {
@@ -277,38 +366,55 @@ void GetOptions( void )
 {
     FILE        * IniFile;
     char        * Pointer;
-    char        Path[ 256 ];
-
-    UserConfig.FogEnable                    = true;
-    UserConfig.InitFullScreen               = true;
-    UserConfig.PrecisionFix                 = true;
-    UserConfig.CreateWindow                 = false;
-    UserConfig.EnableMipMaps                = true;
-    UserConfig.BuildMipMaps                 = false;
-    UserConfig.IgnorePaletteChange          = false;
-    UserConfig.ARB_multitexture             = true;
-    UserConfig.EXT_paletted_texture         = true;
-    UserConfig.EXT_texture_env_add          = false;
-    UserConfig.EXT_texture_env_combine      = false;
-    UserConfig.EXT_vertex_array             = false;
-    UserConfig.EXT_fog_coord                = true;
-    UserConfig.EXT_blend_func_separate      = false;
-    UserConfig.Wrap565to5551                = true;
-
-    UserConfig.Resolution                   = 0;
-
-    UserConfig.TextureMemorySize            = 16;
-    UserConfig.FrameBufferMemorySize        = 8;
-
-    UserConfig.Priority                     = 2;
-
-    // Maintain existing behaviour
-    UserConfig.NoSplash                     = true;
-    UserConfig.ShamelessPlug                = false;
+    char        * ExeName;
+    char        Path[MAX_PATH];
     
-    UserConfig.Logging                      = false;
+    /* config default */
+    memset(&UserConfig, 0, sizeof(UserConfig));
 
-    strcpy( Path, INIFILE );
+    #define OGL_CFG_BOOL(_name, _def, _des)              UserConfig._name = _def;
+    #define OGL_CFG_FLOAT(_name, _def, _min, _max, _dec) UserConfig._name = _def;
+    #define OGL_CFG_INT(_name, _def, _min, _max, _dec)   UserConfig._name = _def;
+
+		#include "GLconf.h"
+		
+		#undef OGL_CFG_BOOL
+		#undef OGL_CFG_FLOAT
+		#undef OGL_CFG_INT
+		
+		/* read config from registry */
+    GetModuleFileNameA(NULL, Path, MAX_PATH-1);
+    Path[MAX_PATH-1] = '\0';
+    ExeName = strrchr(Path, '\\');
+    if(strrchr(Path, '/') > ExeName)
+    {
+    	ExeName = strrchr(Path, '/');
+    }
+    
+    if(ExeName != NULL)
+    {
+    	ExeName++; /* strip leading '\' or '/' */
+    	if(strlen(ExeName))
+    	{
+    		#define OGL_CFG_BOOL(_name, _def, _des) \
+    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atoi(Pointer) ? true : false;
+    	
+    		#define OGL_CFG_INT(_name, _def, _min, _max, _des) \
+    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atoi(Pointer);
+    	
+    		#define OGL_CFG_FLOAT(_name, _def, _min, _max, _des) \
+    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atof(Pointer);
+    				
+				#include "GLconf.h"
+		
+				#undef OGL_CFG_BOOL
+				#undef OGL_CFG_FLOAT
+				#undef OGL_CFG_INT
+    	}
+    }
+
+    /* read config name from registry */
+    strcpy( Path, INIFILE ); 
 
     GlideMsg( "Configuration file is %s\n", Path );
     
@@ -328,75 +434,49 @@ void GetOptions( void )
     	{
         IniFile = fopen( Path, "w" );
         fprintf( IniFile, "Configuration File for OpenGLide\n\n" );
-        fprintf( IniFile, "Info:\n" );
-        fprintf( IniFile, "Priority goes from 0(HIGH) to 5(IDLE)\n" );
-        fprintf( IniFile, "Output resolution: 0 = original, 1.0-16.0 = scale factor, >16 = fixed width (height calculated automatically)\n" );
-        fprintf( IniFile, "Texture Memory goes from %d to %d\n", OGL_MIN_TEXTURE_BUFFER, OGL_MAX_TEXTURE_BUFFER );
-        fprintf( IniFile, "Frame Buffer Memory goes from %d to %d\n", OGL_MIN_FRAME_BUFFER, OGL_MAX_FRAME_BUFFER );
-        fprintf( IniFile, "All other fields are boolean with 1(TRUE) and 0(FALSE)\n\n" );
         fprintf( IniFile, "Version=%s\n\n", OpenGLideVersion );
         fprintf( IniFile, "[Options]\n" );
-        fprintf( IniFile, "WrapperPriority=%d\n", UserConfig.Priority );
-        fprintf( IniFile, "CreateWindow=%d\n", UserConfig.CreateWindow );
-        fprintf( IniFile, "InitFullScreen=%d\n", UserConfig.InitFullScreen );
-        fprintf( IniFile, "Resolution=%.1f\n", UserConfig.Resolution );
-        fprintf( IniFile, "EnableMipMaps=%d\n", UserConfig.EnableMipMaps );
-        fprintf( IniFile, "IgnorePaletteChange=%d\n", UserConfig.IgnorePaletteChange );
-        fprintf( IniFile, "Wrap565to5551=%d\n", UserConfig.Wrap565to5551 );
-        fprintf( IniFile, "EnablePrecisionFix=%d\n", UserConfig.PrecisionFix );
-        fprintf( IniFile, "EnableMultiTextureEXT=%d\n", UserConfig.ARB_multitexture );
-        fprintf( IniFile, "EnablePaletteEXT=%d\n", UserConfig.EXT_paletted_texture );
-        fprintf( IniFile, "EnableVertexArrayEXT=%d\n", UserConfig.EXT_vertex_array );
-        fprintf( IniFile, "TextureMemorySize=%d\n", UserConfig.TextureMemorySize );
-        fprintf( IniFile, "FrameBufferMemorySize=%d\n", UserConfig.FrameBufferMemorySize );
-        fprintf( IniFile, "NoSplash=%d\n", UserConfig.NoSplash );
-        fprintf( IniFile, "Logging=%d\n",  UserConfig.Logging );
-        fclose( IniFile );
+
+				#define OGL_CFG_BOOL(_name, _def, _des) \
+					if(sizeof(_des) > 1){fprintf(IniFile, "; BOOL: %s\n", _des);} \
+					else{fprintf(IniFile, "; BOOL, default: %d\n", _def ? 1 : 0);} \
+					fprintf(IniFile, "%s=%d\n\n", #_name, _def ? 1 : 0);
+				
+				#define OGL_CFG_FLOAT(_name, _def, _min, _max, _des) \
+					if(sizeof(_des) > 1){fprintf(IniFile, "; FLOAT: %s\n", _des);} \
+					else{fprintf(IniFile, "; FLOAT, default: %.2f, min: %.2f, max: %.2f\n", (double)_def, (double)_min, (double)_max);} \
+					fprintf(IniFile, "%s=%.2f\n\n", #_name, (double)_def);
+				
+				#define OGL_CFG_INT(_name, _def, _min, _max, _des) \
+					if(sizeof(_des) > 1){fprintf(IniFile, "; INT: %s\n", _des);} \
+					else{fprintf(IniFile, "; INT, default: %d, min: %d, max: %d\n", _def, _min, _max);} \
+					fprintf(IniFile, "%s=%d\n\n", #_name, _def);
+				
+				#include "GLconf.h"
+		
+				#undef OGL_CFG_BOOL
+				#undef OGL_CFG_FLOAT
+				#undef OGL_CFG_INT
+					
+        fclose(IniFile);
       }
-    }
+    } // !acces
     else
     {
-        Pointer = FindConfig( Path, "Version" );
-        if ( Pointer && !strcmp( Pointer, OpenGLideVersion ) )
-        {
-            if ( (Pointer = FindConfig(Path, "CreateWindow")) )
-                UserConfig.CreateWindow = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "InitFullScreen")) )
-                UserConfig.InitFullScreen = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "Resolution")) )
-                UserConfig.Resolution = atof( Pointer );
-            if ( (Pointer = FindConfig(Path, "EnableMipMaps")) )
-                UserConfig.EnableMipMaps = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "IgnorePaletteChange")) )
-                UserConfig.IgnorePaletteChange = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "EnablePrecisionFix")) )
-                UserConfig.PrecisionFix = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "EnableMultiTextureEXT")) )
-                UserConfig.ARB_multitexture = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "EnablePaletteEXT")) )
-                UserConfig.EXT_paletted_texture = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "EnableVertexArrayEXT")) )
-                UserConfig.EXT_vertex_array = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "TextureMemorySize")) )
-                UserConfig.TextureMemorySize = atoi( Pointer );
-            if ( (Pointer = FindConfig(Path, "WrapperPriority")) )
-                UserConfig.Priority = atoi( Pointer );
-            if ( (Pointer = FindConfig(Path, "Wrap565to5551")) )
-                UserConfig.Wrap565to5551 = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "FrameBufferMemorySize")) )
-                UserConfig.FrameBufferMemorySize = atoi( Pointer );
-            if ( (Pointer = FindConfig(Path, "NoSplash")) )
-                UserConfig.NoSplash = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "ShamelessPlug")) )
-                UserConfig.ShamelessPlug = atoi( Pointer ) ? true : false;
-            if ( (Pointer = FindConfig(Path, "Logging")) )
-                UserConfig.Logging = atoi( Pointer ) ? true : false;
-        }
-        else
-        {
-            remove( Path );
-            GetOptions( );
-        }
+    	#define OGL_CFG_BOOL(_name, _def, _des) \
+    		if((Pointer = FindConfig(Path, #_name))) UserConfig._name = atoi(Pointer) ? true : false;
+    	
+    	#define OGL_CFG_INT(_name, _def, _min, _max, _des) \
+    		if((Pointer = FindConfig(Path, #_name))) UserConfig._name = atoi(Pointer);
+    	
+    	#define OGL_CFG_FLOAT(_name, _def, _min, _max, _des) \
+    		if((Pointer = FindConfig(Path, #_name))) UserConfig._name = atof(Pointer);
+    	
+			#include "GLconf.h"
+		
+			#undef OGL_CFG_BOOL
+			#undef OGL_CFG_FLOAT
+			#undef OGL_CFG_INT
     }
 }
 

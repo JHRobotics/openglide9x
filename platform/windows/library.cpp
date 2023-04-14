@@ -11,45 +11,17 @@
 //**************************************************************
 #ifdef WIN32
 
+#define OEMRESOURCE
+
 #include "platform.h"
 #include "GlOgl.h"
 
-LRESULT CALLBACK DrawWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch(message)
-	{
-		case WM_CREATE:
-		  //PostQuitMessage(0);
-			break;
-		case WM_SETCURSOR:
-			SetCursor(NULL);
-			break;
-		default:
-			return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-	
-	return 0;
-}
+#include "openglide9x.h"
+
+HCURSOR hTransparent = NULL;
+HCURSOR hDefault = NULL;
 
 HINSTANCE glideDLLInt = NULL;
-
-BOOL registerWinClass()
-{
-	WNDCLASS wc      = {0};
-	wc.lpfnWndProc   = DrawWndProc;
-	wc.hInstance     = glideDLLInt;
-	wc.hbrBackground = (HBRUSH)(COLOR_BACKGROUND);
-	wc.lpszClassName = GLIDE_WND_CLASS_NAME;
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-	
-	printf("RegisterClass!\n");
-	if( !RegisterClass(&wc) )
-	{
-		return TRUE;
-	}
-	
-	return FALSE;
-}
 
 BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
 {
@@ -66,7 +38,17 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
             return false;
         }
         glideDLLInt = hinstDLL;
-        registerWinClass();
+        RegisterWinClass();
+        
+        #ifdef __GNUC__
+        __builtin_cpu_init();
+        #endif
+        
+        /* transparent cursort and copy of actual default cursor */
+        hTransparent = LoadCursorA(glideDLLInt, MAKEINTRESOURCE(CURSOR_TRANSPARENT));
+				if(hTransparent) CopyCursor(hTransparent);
+				hDefault = LoadCursorA(NULL, IDC_ARROW);
+        if(hDefault) CopyCursor(hDefault);
         
         InitMainVariables( );
 
@@ -107,6 +89,10 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
     case DLL_PROCESS_DETACH:
         grGlideShutdown( );
         CloseLogFile( );
+        
+        if(hDefault != NULL) DestroyCursor(hDefault);
+        if(hTransparent != NULL) DestroyCursor(hTransparent);
+        
         break;
     }
     return TRUE;
