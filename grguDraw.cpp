@@ -16,6 +16,7 @@
 //*************************************************
 //* Draws a Triangle on the screen
 //*************************************************
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c )
 {
@@ -31,6 +32,30 @@ grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c )
         glFlush( );
     }
 }
+
+#else
+
+FX_ENTRY void FX_CALL
+grDrawTriangle( const void *a1, const void *b1, const void *c1 )
+{
+#ifdef OGL_CRITICAL
+    GlideMsg( "grDrawTriangle( ---, ---, --- )\n" );
+#endif
+		GrVertex a, b, c;
+		Glide3VertexUnpack(&a, a1);
+		Glide3VertexUnpack(&b, b1);
+		Glide3VertexUnpack(&c, c1);
+
+    RenderAddTriangle( &a, &b, &c, true );
+
+    if ( Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER )
+    {
+        RenderDrawTriangles( );
+        glFlush( );
+    }
+}
+
+#endif
 
 //*************************************************
 //* Draws a Triangle on the screen
@@ -57,6 +82,7 @@ grDrawPlanarPolygonVertexList( int nVertices, const GrVertex vlist[] )
 //*************************************************
 //* Draws a Line on the screen
 //*************************************************
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 grDrawLine( const GrVertex *a, const GrVertex *b )
 {
@@ -72,10 +98,32 @@ grDrawLine( const GrVertex *a, const GrVertex *b )
     RenderDrawTriangles( );
     RenderAddLine( a, b, true );
 }
+#else
+
+FX_ENTRY void FX_CALL
+grDrawLine( const void *a1, const void *b1 )
+{
+#ifdef OGL_CRITICAL
+    GlideMsg("grDrawLine( ---, --- )\n");
+#endif
+   GrVertex a, b;
+		Glide3VertexUnpack(&a, a1);
+		Glide3VertexUnpack(&b, b1);
+    
+   /*
+    * RenderAddLine actually renders the line, so
+    * we must render the queued triangles first to
+    * avoid out-of-order rendering.
+    */
+    RenderDrawTriangles( );
+    RenderAddLine( &a, &b, true );
+}
+#endif
 
 //*************************************************
 //* Draws a Point on the screen
 //*************************************************
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 grDrawPoint( const GrVertex *a )
 {
@@ -85,6 +133,20 @@ grDrawPoint( const GrVertex *a )
 
     RenderAddPoint( a, true );
 }
+#else
+FX_ENTRY void FX_CALL
+grDrawPoint( const void *a1 )
+{
+#ifdef OGL_CRITICAL
+    GlideMsg( "grDrawPoint( --- )\n" );
+#endif
+	GrVertex a;
+	Glide3VertexUnpack(&a, a1);
+
+  RenderAddPoint( &a, true );
+}
+#endif
+
 
 //*************************************************
 //* Draw a convex non-planar polygon

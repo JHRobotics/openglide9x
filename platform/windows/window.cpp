@@ -114,21 +114,19 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     unsigned int            BitsPerPixel;
     HWND                    hwnd = (HWND) wnd;
 
-    if(UserConfig.CreateWindow)
-    {
-    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide fake window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, width, height, NULL, NULL, glideDLLInt, NULL);
-    	hWND_created = true;
-    }
-    else
-    {
-    	hWND_created = false;
-    }
-
     if( hwnd == NULL )
     {
         hwnd = GetActiveWindow();
     }
+    
+    hWND_created = false;
 
+    if(hwnd == NULL && UserConfig.CreateWindow)
+    {
+    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide fake window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, width, height, NULL, NULL, glideDLLInt, NULL);
+    	hWND_created = true;
+    }
+    
     if ( hwnd == NULL)
     {
         MessageBox( NULL, "NULL window specified", "Error", MB_OK );

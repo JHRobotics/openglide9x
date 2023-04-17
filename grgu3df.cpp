@@ -313,9 +313,9 @@ int Read3dfHeader( const char *filename, Gu3dfInfo *data )
 
     fgets( buffer, 255, file3df );
     sscanf( buffer, "aspect ratio: %d %d\n", &temp1, &temp2 );
-
+    
     data->header.aspect_ratio = ParseAspect( temp1, temp2 );
-
+    
     switch ( data->header.aspect_ratio )
     {
     case GR_ASPECT_8x1: nWidth = lod2;      nHeight = lod2 >> 3;    break;
@@ -329,13 +329,16 @@ int Read3dfHeader( const char *filename, Gu3dfInfo *data )
 
     data->header.width = nWidth;
     data->header.height = nHeight;
-
+    
     {
         GrLOD_t l;
 
         data->mem_required = 0;
-        
+#ifndef GLIDE3_ALPHA
         for ( l = data->header.large_lod; l <= data->header.small_lod; l++ )
+#else
+        for ( l = data->header.small_lod; l <= data->header.large_lod; l++ )
+#endif
             data->mem_required += GetTexSize( l, data->header.aspect_ratio, data->header.format );
     }
 

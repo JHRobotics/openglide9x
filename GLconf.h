@@ -2,7 +2,7 @@
 OGL_CFG_BOOL(FogEnable,                true, "")
 OGL_CFG_BOOL(InitFullScreen,           true, "")
 OGL_CFG_BOOL(PrecisionFix,             true, "")
-OGL_CFG_BOOL(CreateWindow,            false, "")
+OGL_CFG_BOOL(CreateWindow,             true, "Create Window if NULL is passed to grSstWinOpen")
 OGL_CFG_BOOL(EnableMipMaps,            true, "")
 OGL_CFG_BOOL(BuildMipMaps,            false, "")
 OGL_CFG_BOOL(IgnorePaletteChange,     false, "")

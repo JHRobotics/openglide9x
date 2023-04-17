@@ -39,7 +39,7 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         }
         glideDLLInt = hinstDLL;
         RegisterWinClass();
-        
+                
         #ifdef __GNUC__
         __builtin_cpu_init();
         #endif

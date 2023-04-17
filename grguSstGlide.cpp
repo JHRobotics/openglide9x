@@ -96,7 +96,7 @@ grGlideInit( void )
     ZeroMemory( &OpenGL, sizeof( OpenGLStruct ) );
 
     Glide.ActiveVoodoo      = 0;
-    Glide.State.VRetrace    = FXTRUE;
+    Glide.State.VRetrace    = FXFALSE;
 
     ExternErrorFunction = NULL;
 
@@ -241,6 +241,8 @@ grSstQueryBoards( GrHwConfiguration *hwConfig )
 }
 
 //*************************************************
+void VXLInit();
+
 #ifndef GLIDE3
 FX_ENTRY FxBool FX_CALL
 grSstWinOpen(   FxU hwnd,
@@ -412,7 +414,9 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     grConstantColorValue( 0xFFFFFFFF );
     grClipWindow( 0, 0, Glide.WindowWidth, Glide.WindowHeight );
 //  grGammaCorrectionValue( 1.6f );
+#ifndef GLIDE3
     grHints( GR_HINT_STWHINT, 0 );
+#endif
 
 #ifdef OGL_DONE
     GlideMsg( "----End of grSstWinOpen()\n" );
@@ -442,6 +446,9 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #ifndef GLIDE3
     return FXTRUE;
 #else
+    VXLInit();
+    grViewport(0, 0, Glide.WindowWidth, Glide.WindowHeight);
+
 		return 1;
 #endif
 }
@@ -456,11 +463,15 @@ FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
 #endif
 {
 #ifdef GLIDE3
+# ifdef OGL_DONE
+    GlideMsg( "grSstWinClose(%u)\n", ctx);
+# endif
+
 	if(ctx != 1) return FXFALSE;
-#endif
-	
-#ifdef OGL_DONE
+#else
+# ifdef OGL_DONE
     GlideMsg( "grSstWinClose()\n" );
+# endif
 #endif
     if ( ! OpenGL.WinOpen )
     {
@@ -659,11 +670,26 @@ grSstVideoLine( void )
 FX_ENTRY FxBool FX_CALL 
 grSstVRetraceOn( void )
 {
+	/* JH: result oscilating between FXTRUE/FXFALSE
+	 * for some stupid games which waiting for retrace and
+	 * and after for retrace ends. Forever.
+	 */
+	static FxBool last = FXFALSE;
+	
 #ifdef OGL_NOTDONE
     GlideMsg( "grSstVRetraceOn( )\n" );
 #endif
+		if(last == FXFALSE)
+		{
+			last = FXTRUE;
+		}
+		else
+		{
+			last = FXFALSE;
+		}
 
-    return Glide.State.VRetrace;
+    //return Glide.State.VRetrace;
+    return last;
 }
 
 //*************************************************

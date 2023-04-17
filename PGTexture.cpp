@@ -16,6 +16,10 @@
 #include "FormatConversion.h"
 #include "OGLTables.h"
 
+#define TEX_TEMP_PIXELS (256 * 256)
+
+static FxU32 m_tex_temp[ TEX_TEMP_PIXELS ];
+
 #define OGL_LOAD_CREATE_TEXTURE( compnum, compformat, comptype, texdata )   \
     {                                                                       \
         glTexImage2D( GL_TEXTURE_2D, texVals.lod, compnum,                  \
@@ -104,9 +108,14 @@ PGTexture::~PGTexture( void )
 
 void PGTexture::DownloadMipMap( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
 {
+#ifndef GLIDE3_ALPHA
     FxU32 mip_size = MipMapMemRequired( info->smallLod, 
                                         info->aspectRatio, 
                                         info->format );
+#else
+    FxU32 mip_size = MipMapMemRequired( info->smallLodLog2,  info->aspectRatioLog2, info->format );
+#endif
+
     FxU32 mip_offset = startAddress + TextureMemRequired( evenOdd, info );
     
     if ( info->format == GR_TEXFMT_BGRA_8888 )
@@ -117,9 +126,15 @@ void PGTexture::DownloadMipMap( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *in
         GLuint  texNum;
         TexValues  texVals;
 
+#ifndef GLIDE3_ALPHA
         texVals.width = texInfo[ info->aspectRatio ][ info->largeLod ].width;
         texVals.height = texInfo[ info->aspectRatio ][ info->largeLod ].height;
         texVals.nPixels = texInfo[ info->aspectRatio ][ info->largeLod ].numPixels;
+#else
+        texVals.width = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].width;
+        texVals.height = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].height;
+        texVals.nPixels = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].numPixels;
+#endif
         texVals.lod = 0;
 
         m_db->WipeRange( startAddress, mip_offset, 0 );
@@ -150,7 +165,11 @@ void PGTexture::DownloadMipMap( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *in
     }
 
 #ifdef OGL_DEBUG
+# ifndef GLIDE3_ALPHA
     if ( info->smallLod == info->largeLod )
+# else
+    if ( info->smallLodLog2 == info->largeLodLog2 )
+#endif
     {
         switch ( info->format )
         {
@@ -183,15 +202,23 @@ void PGTexture::DownloadMipMapPartial( FxU32 startAddress, FxU32 evenOdd, GrTexI
         DownloadMipMap( startAddress, evenOdd, info );
         return;
     }
-
+#ifndef GLIDE3_ALPHA
     FxU32 mip_size = MipMapMemRequired( info->smallLod, 
                                         info->aspectRatio, 
                                         info->format );
+#else
+    FxU32 mip_size = MipMapMemRequired( info->smallLodLog2, info->aspectRatioLog2, info->format );
+#endif
     FxU32 mip_offset = startAddress + TextureMemRequired( evenOdd, info );
  
     if ( mip_offset <= m_tex_memory_size )
     {
+#ifndef GLIDE3_ALPHA
         int stride = texInfo[ info->aspectRatio ][ info->smallLod ].width;
+#else
+				int stride = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->smallLodLog2 ].width;
+#endif
+        
         if (info->format >= GR_TEXFMT_16BIT)
             stride *= 2;
         FxU8 *mip_memory = m_memory + mip_offset - mip_size;
@@ -207,8 +234,13 @@ void PGTexture::Source( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
     m_evenOdd = evenOdd;
     m_info = *info;
 
+#ifndef GLIDE3_ALPHA
     m_wAspect = texAspects[ info->aspectRatio ].w;
     m_hAspect = texAspects[ info->aspectRatio ].h;
+#else
+    m_wAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].w;
+    m_hAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].h;
+#endif
 
     m_valid = ( ( startAddress + TextureMemRequired( evenOdd, info ) ) <= m_tex_memory_size );
 }
@@ -482,8 +514,12 @@ bool PGTexture::MakeReady( void )
             }
             else
             {
+            	// JHFIX: buffer overflow here!
+            	if(texVals.nPixels <= TEX_TEMP_PIXELS)
+            	{
                 ConvertAP88to8888( (FxU16*)data, m_tex_temp, texVals.nPixels, m_palette );
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
+              }
             }
             break;
             
@@ -568,11 +604,17 @@ FxU32 PGTexture::LodOffset( FxU32 evenOdd, GrTexInfo *info )
 {
     FxU32   total = 0;
     GrLOD_t i;
-
+#ifndef GLIDE3_ALPHA
     for( i = info->largeLod; i < info->smallLod; i++ )
     {
         total += MipMapMemRequired( i, info->aspectRatio, info->format );
     }
+#else
+    for( i = info->smallLodLog2; i < info->largeLodLog2; i++ )
+    {
+				total += MipMapMemRequired( i, info->aspectRatioLog2, info->format );
+    }
+#endif
 
     total = ( total + 7 ) & ~7;
 
@@ -593,7 +635,11 @@ FxU32 PGTexture::TextureMemRequired( FxU32 evenOdd, GrTexInfo *info )
     if( info->format == GR_TEXFMT_BGRA_8888)
         return 2048;
 
+#ifndef GLIDE3_ALPHA
     return nSquareTexLod[ info->format <= GR_TEXFMT_RSVD1 ][ info->aspectRatio ][ info->largeLod ][ info->smallLod ];
+#else
+    return nSquareTexLod[ info->format <= GR_TEXFMT_RSVD1 ][ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ][ 8 - info->smallLodLog2 ];
+#endif
 }
 
 FxU32 PGTexture::MipMapMemRequired( GrLOD_t lod, GrAspectRatio_t aspectRatio, GrTextureFormat_t format )
@@ -610,14 +656,24 @@ FxU32 PGTexture::MipMapMemRequired( GrLOD_t lod, GrAspectRatio_t aspectRatio, Gr
     if( format == GR_TEXFMT_BGRA_8888)
         return 2048;
 
+#ifndef GLIDE3_ALPHA
     return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ aspectRatio ][ lod ];
+#else
+    return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ 3 - aspectRatio ][ 8 - lod ];
+#endif
 }
 
 void PGTexture::GetTexValues( TexValues * tval )
 {
+#ifndef GLIDE3_ALPHA
     tval->width = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].width;
     tval->height = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].height;
     tval->nPixels = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].numPixels;
+#else
+    tval->width = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].width;
+    tval->height = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].height;
+    tval->nPixels = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].numPixels;
+#endif
     tval->lod = 0;
 }
 

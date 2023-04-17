@@ -1,6 +1,9 @@
 #backup
 /backup/
 
+#3Dfx tests (diffent licence)
+/tests/
+
 # generated and temporary files
 *.o
 *.bak
@@ -16,4 +19,3 @@
 
 # user defined configuration
 config.mk
-

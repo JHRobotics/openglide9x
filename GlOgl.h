@@ -306,4 +306,6 @@ void InitMainVariables( void );
 
 int DetectMMX();
 
+void Glide3VertexUnpack(GrVertex *v, const void *ptr);
+
 #endif

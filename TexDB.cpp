@@ -214,8 +214,13 @@ TexDB::Record::~Record( void )
 bool TexDB::Record::Match( FxU32 stt, GrTexInfo *inf, FxU32 h )
 {
    return ( ( startAddress == stt ) && 
+#ifndef GLIDE3_ALPHA
             ( inf->largeLod == info.largeLod ) && 
             ( inf->aspectRatio == info.aspectRatio ) && 
+#else
+            ( inf->largeLodLog2 == info.largeLodLog2 ) && 
+            ( inf->aspectRatioLog2 == info.aspectRatioLog2 ) && 
+#endif
             ( inf->format == info.format ) && 
             ( ( hash == h ) || ( h == 0 ) ) );
 }

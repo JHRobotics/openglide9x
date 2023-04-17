@@ -333,7 +333,7 @@ typedef struct {
 typedef FxI32 GrLOD_t;
 #if defined(GLIDE3) && defined(GLIDE3_ALPHA)
 #ifdef GLIDE3_DEBUG
-#define GR_LOD_256              0x0
+/*#define GR_LOD_256              0x0
 #define GR_LOD_128              0x1
 #define GR_LOD_64               0x2
 #define GR_LOD_32               0x3
@@ -341,7 +341,7 @@ typedef FxI32 GrLOD_t;
 #define GR_LOD_8                0x5
 #define GR_LOD_4                0x6
 #define GR_LOD_2                0x7
-#define GR_LOD_1                0x8
+#define GR_LOD_1                0x8*/
 #else
 #define GR_LOD_256              0x8
 #define GR_LOD_128              0x7
@@ -443,8 +443,9 @@ typedef FxU32 GrEnableMode_t;
 
 #define GR_AA_ORDERED            0x01
 #define GR_ALLOW_MIPMAP_DITHER   0x02
-#define GR_SHAMELESS_PLUG        0x03
-#define GR_VIDEO_SMOOTHING       0x04
+#define GR_PASSTHRU              0x03
+#define GR_SHAMELESS_PLUG        0x04
+#define GR_VIDEO_SMOOTHING       0x05
 
 typedef FxU32 GrCoordinateSpaceMode_t;
 #define GR_WINDOW_COORDS    0x00
@@ -531,6 +532,9 @@ typedef struct _GrState_s {
 #define GR_PARAM_Q6       GR_PARAM_Q0+6
 #define GR_PARAM_Q7       GR_PARAM_Q0+7
 
+#define GR_PARAM_SIZE     GR_PARAM_Q7+1
+
+
 #define GR_PARAM_DISABLE  0x00
 #define GR_PARAM_ENABLE   0x01
 
@@ -554,6 +558,8 @@ typedef struct _GrState_s {
 #define GR_TRIANGLE_STRIP       4
 #define GR_TRIANGLE_FAN         5
 #define GR_TRIANGLES            6
+#define GR_TRIANGLE_STRIP_CONTINUE       7
+#define GR_TRIANGLE_FAN_CONTINUE         8
 
 
 /* Stuff for grGet/grReset */
@@ -617,13 +623,13 @@ typedef struct _GrState_s {
 
 #if defined(GLIDE3) && defined(GLIDE3_ALPHA)
 #ifdef GLIDE3_DEBUG
-typedef struct {
+/*typedef struct {
     GrLOD_t           smallLod;
     GrLOD_t           largeLod;
     GrAspectRatio_t   aspectRatio;
     GrTextureFormat_t format;
     void              *data;
-} GrTexInfo;
+} GrTexInfo;*/
 #else
 typedef struct {
     GrLOD_t           smallLodLog2;
@@ -708,6 +714,7 @@ typedef struct
   GuNccTable    ncc_table;              /* NCC compression table (optional) */
 } GrMipMapInfo;
 #endif
+
 
 typedef int GrSstType;
 #define GR_SSTTYPE_VOODOO    0
@@ -906,17 +913,17 @@ grDrawPolygonVertexList( int nverts, const GrVertex vlist[] );
 
 #endif /* !GLIDE3_ALPHA */
 
-/*#ifdef GLIDE3
+#ifdef GLIDE3
 FX_ENTRY void FX_CALL
-grDrawPoint( void *pt );
+grDrawPoint( const void *pt );
 
 FX_ENTRY void FX_CALL
-grDrawLine( void *v1, void *v2 );
+grDrawLine( const void *v1, const void *v2 );
 
 FX_ENTRY void FX_CALL
-grDrawTriangle( void *a, void *b, void *c );
+grDrawTriangle( const void *a, const void *b, const void *c );
 
-#else*/
+#else
 FX_ENTRY void FX_CALL
 grDrawPoint( const GrVertex *pt );
 
@@ -925,7 +932,7 @@ grDrawLine( const GrVertex *v1, const GrVertex *v2 );
 
 FX_ENTRY void FX_CALL
 grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c );
-//#endif
+#endif
 
 /*
 ** buffer management
@@ -1516,7 +1523,7 @@ FX_ENTRY void FX_CALL
 grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode);
 
 FX_ENTRY void FX_CALL 
-grDrawVertexArray(FxU32 mode, FxU32 Count, void *pointers);
+grDrawVertexArray(FxU32 mode, FxU32 Count, void **pointers);
 
 FX_ENTRY void FX_CALL 
 grDrawVertexArrayLinear(FxU32 mode, FxU32 Count, void *pointers, FxU32 stride);

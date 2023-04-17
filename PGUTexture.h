@@ -27,7 +27,9 @@ public:
                              GrTextureClampMode_t t_clamp_mode, 
                              GrTextureFilterMode_t minFilterMode, 
                              GrTextureFilterMode_t magFilterMode );
+#ifndef GLIDE3_ALPHA
     GrMipMapInfo * GetMipMapInfo( GrMipMapId_t mmid );
+#endif
     void Source( GrMipMapId_t id );
     void MemReset( void );
     void DownloadMipMapLevel( GrMipMapId_t mmid, GrLOD_t lod, const void **src );
@@ -49,7 +51,12 @@ private:
 
     enum { MAX_MM = 1024 };
 
+#ifndef GLIDE3_ALPHA
     GrMipMapInfo    mm_info[ MAX_MM ];
+#else
+GrMipMapInfoInternal mm_info[ MAX_MM ];
+#endif
+
     FxU32           mm_start[ MAX_MM ];
     FxU32           m_free_mem;
     GrMipMapId_t    m_free_id;

@@ -77,8 +77,6 @@ private:
     FxU16           m_chromakey_value_565;
     float           m_wAspect;
     float           m_hAspect;
-
-    FxU32           m_tex_temp[ 256 * 256 ];
     bool            m_valid;
     FxU8 *          m_memory;
     FxU32           m_startAddress;

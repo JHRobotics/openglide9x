@@ -6,10 +6,15 @@ DEPS = config.mk Makefile
 CSTD=c99
 CXXSTD=gnu++11
 
+
+ifdef DEBUG
+BASE_glide2x.dll   := 0x03a00000
+BASE_glide3x.dll   := 0x06400000
+else
 # base address 3DFX drivers
 BASE_glide2x.dll   := 0x10000000
 BASE_glide3x.dll   := 0x10000000
-
+endif
 NULLOUT=$(if $(filter $(OS),Windows_NT),NUL,/dev/null)
 
 GIT      ?= git
@@ -91,7 +96,7 @@ else
   endif
   
   ifdef DEBUG
-    DD_DEFS = -DDEBUG -DOGL_NOTDONE
+    DD_DEFS = -DDEBUG -DOGL_DEBUG
   else
     DD_DEFS = -DNDEBUG
   endif
@@ -119,10 +124,10 @@ else
 		$(CXX) $(CXXFLAGS) -DGLIDE2 -c -o $@ $<
 		
   %.c.g3.o: %.c $(DEPS)
-		$(CC) $(CFLAGS) -DGLIDE3 -c -o $@ $<
+		$(CC) $(CFLAGS) -DGLIDE3 -DGLIDE3_ALPHA -c -o $@ $<
 		
   %.cpp.g3.o: %.cpp $(DEPS)
-		$(CXX) $(CXXFLAGS) -DGLIDE3 -c -o $@ $<
+		$(CXX) $(CXXFLAGS) -DGLIDE3 -DGLIDE3_ALPHA -c -o $@ $<
 	
   %.res: %.rc $(DEPS)
 		$(WINDRES) -DWINDRES $(RDEFS) --input $< --output $@ --output-format=coff

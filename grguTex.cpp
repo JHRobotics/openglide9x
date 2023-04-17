@@ -104,8 +104,12 @@ grTexDownloadMipMap( GrChipID_t tmu,
     }
 
     RenderDrawTriangles( );
-
+#ifndef GLIDE3_ALPHA
     info->smallLod = info->largeLod;
+#else
+    info->smallLodLog2 = info->largeLodLog2;
+#endif
+
     Textures->DownloadMipMap( startAddress, evenOdd, info );
 }
 
@@ -132,10 +136,15 @@ grTexDownloadMipMapLevel( GrChipID_t        tmu,
     }
 
     static GrTexInfo info;
-
+#ifndef GLIDE3_ALPHA
     info.smallLod       = thisLod;
     info.largeLod       = largeLod;
     info.aspectRatio    = aspectRatio;
+#else
+    info.smallLodLog2   = thisLod;
+    info.largeLodLog2   = largeLod;
+    info.aspectRatioLog2= aspectRatio;
+#endif
     info.format         = format;
     info.data           = data;
 
@@ -166,9 +175,15 @@ grTexDownloadMipMapLevelPartial( GrChipID_t        tmu,
     }
 
     GrTexInfo info;
+#ifndef GLIDE3_ALPHA
     info.smallLod    = thisLod;
     info.largeLod    = largeLod;
     info.aspectRatio = aspectRatio;
+#else
+    info.smallLodLog2 = thisLod;
+    info.largeLodLog2 = largeLod;
+    info.aspectRatioLog2 = aspectRatio;
+#endif
     info.format      = format;
     info.data        = data;
 
@@ -330,10 +345,16 @@ grTexCalcMemRequired( GrLOD_t lodmin, GrLOD_t lodmax,
 #endif
 
     static GrTexInfo texInfo;
+#ifndef GLIDE3_ALPHA
     texInfo.aspectRatio = aspect;
-    texInfo.format      = fmt;
     texInfo.largeLod    = lodmax;
     texInfo.smallLod    = lodmin;
+#else
+    texInfo.aspectRatioLog2 = aspect;
+    texInfo.largeLodLog2    = lodmax;
+    texInfo.smallLodLog2    = lodmin;
+#endif
+    texInfo.format      = fmt;
 
     return Textures->TextureMemRequired( 0, &texInfo );
 }
@@ -342,7 +363,10 @@ grTexCalcMemRequired( GrLOD_t lodmin, GrLOD_t lodmax,
 //* Download a subset of an NCC table or color palette
 //*************************************************
 FX_ENTRY void FX_CALL
-grTexDownloadTablePartial( GrChipID_t   tmu,
+grTexDownloadTablePartial(
+#ifndef GLIDE3
+                           GrChipID_t   tmu,
+#endif
                            GrTexTable_t type, 
                            void        *data,
                            int          start,
@@ -353,10 +377,12 @@ grTexDownloadTablePartial( GrChipID_t   tmu,
         tmu, type, start, end );
 #endif
 
+#ifndef GLIDE3
     if ( tmu != GR_TMU0 )
     {
         return;
     }
+#endif
 
     RenderDrawTriangles( );
 
@@ -367,7 +393,10 @@ grTexDownloadTablePartial( GrChipID_t   tmu,
 //* download an NCC table or color palette
 //*************************************************
 FX_ENTRY void FX_CALL
-grTexDownloadTable( GrChipID_t   tmu,
+grTexDownloadTable(
+#ifndef GLIDE3
+                    GrChipID_t   tmu,
+#endif
                     GrTexTable_t type, 
                     void         *data )
 {
@@ -375,10 +404,12 @@ grTexDownloadTable( GrChipID_t   tmu,
     GlideMsg( "grTexDownloadTable( %d, %d, --- )\n", tmu, type );
 #endif
 
+#ifndef GLIDE3
     if ( tmu != GR_TMU0 )
     {
         return;
     }
+#endif
 
     RenderDrawTriangles( );
 
@@ -621,10 +652,14 @@ grTexCombine( GrChipID_t tmu,
 
 //*************************************************
 FX_ENTRY void FX_CALL
-grTexNCCTable( GrChipID_t tmu, GrNCCTable_t NCCTable )
+grTexNCCTable(
+#ifndef GLIDE3
+    GrChipID_t tmu,
+#endif
+    GrNCCTable_t NCCTable )
 {
 #ifdef OGL_DONE
-    GlideMsg( "grTexNCCTable( %d, %u )\n", tmu, NCCTable );
+    GlideMsg( "grTexNCCTable( -, %u )\n", NCCTable );
 #endif
 
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
@@ -857,6 +892,7 @@ guTexChangeAttributes( GrMipMapId_t mmid,
 }
 
 //*************************************************
+#ifndef GLIDE3
 FX_ENTRY GrMipMapInfo * FX_CALL 
 guTexGetMipMapInfo( GrMipMapId_t mmid )
 {
@@ -866,7 +902,7 @@ guTexGetMipMapInfo( GrMipMapId_t mmid )
 
     return UTextures.GetMipMapInfo( mmid );
 }
-
+#endif
 //*************************************************
 FX_ENTRY void FX_CALL 
 guTexMemReset( void )

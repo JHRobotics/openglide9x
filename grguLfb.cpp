@@ -353,7 +353,11 @@ grLfbWriteRegion( GrBuffer_t dst_buffer,
                   FxU32 dst_x, FxU32 dst_y,
                   GrLfbSrcFmt_t src_format,
                   FxU32 src_width, FxU32 src_height,
-                  FxI32 src_stride, void *src_data )
+                  FxI32 src_stride,
+#ifdef GLIDE3
+                  FxBool pixelPipeline,
+#endif
+                  void *src_data )
 {
 #ifdef OGL_NOTDONE
     GlideMsg("grLfbWriteRegion( %d, %d, %d, %d, %d, %d, %d, --- )\n",

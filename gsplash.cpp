@@ -169,7 +169,10 @@ static void sourceTexture( Texture *texture ) {
                 GR_MIPMAPLEVELMASK_BOTH,
                 &texture->info );
     if ( texture->tableType != NO_TABLE ) {
-      grTexDownloadTable( GR_TMU0,
+      grTexDownloadTable(
+#ifndef GLIDE3
+       GR_TMU0,
+#endif
                          texture->tableType,
                          &texture->tableData );
     }
@@ -194,9 +197,15 @@ static GrTexTable_t texTableType( GrTextureFormat_t format ) {
 
 static void downloadTexture( Texture *texture, Gu3dfInfo *info ) {
   texture->info.data        = info->data;
+#ifndef GLIDE3_ALPHA
   texture->info.smallLod    = info->header.small_lod;
   texture->info.largeLod    = info->header.large_lod;
   texture->info.aspectRatio = info->header.aspect_ratio;
+#else
+  texture->info.smallLodLog2    = 8 - info->header.small_lod;
+  texture->info.largeLodLog2    = 8 - info->header.large_lod;
+  texture->info.aspectRatioLog2 = 3 - info->header.aspect_ratio;
+#endif
   texture->info.format      = info->header.format;
 
   texture->addr = nextFreeBase;

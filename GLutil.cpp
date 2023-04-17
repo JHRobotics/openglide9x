@@ -225,7 +225,11 @@ FxU32 GetTexSize( const int Lod, const int aspectRatio, const int format )
     ** GR_TEXFMT_P_8
     ** Reduces the size by 2
     */
+#ifndef GLIDE3_ALPHA
     return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ aspectRatio ][ Lod ];
+#else
+		return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ 3 - aspectRatio ][ 8 - Lod ];
+#endif
 }
 
 static char * FindConfig( const char *IniFile, const char *IniConfig )
@@ -460,7 +464,7 @@ void GetOptions( void )
 					
         fclose(IniFile);
       }
-    } // !acces
+    } // !access
     else
     {
     	#define OGL_CFG_BOOL(_name, _def, _des) \
