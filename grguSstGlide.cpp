@@ -74,7 +74,11 @@ grGlideGetVersion( char version[80] )
 #ifdef OGL_DONE
     GlideMsg( "grGlideGetVersion( --- )\n" );
 #endif
+#ifndef GLIDE3
     sprintf( version, "Glide 2.45 - OpenGLide %s", OpenGLideVersion );
+#else
+    sprintf( version, "Glide 3.00 - OpenGLide %s", OpenGLideVersion );
+#endif
 }
 
 //*************************************************
@@ -337,8 +341,9 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     InitOpenGL( );
 
     OpenGL.tmpBuf = new FxU32[ OpenGL.WindowTotalPixels ];
-    Glide.SrcBuffer.Address = new FxU16[ Glide.WindowTotalPixels ];
-    Glide.DstBuffer.Address = new FxU16[ Glide.WindowTotalPixels ];
+    // buffers need to be 2x Glide.WindowTotalPixels for 32bit LFB writes!
+    Glide.SrcBuffer.Address = new FxU16[ Glide.WindowTotalPixels*2 ];
+    Glide.DstBuffer.Address = new FxU16[ Glide.WindowTotalPixels*2 ];
     Glide.LFBTextureSize = 2 << int_log2(Glide.WindowWidth > Glide.WindowHeight ? (Glide.WindowWidth-1) : (Glide.WindowHeight-1));
 
     glGenTextures( 1, &Glide.LFBTexture );
@@ -416,6 +421,8 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 //  grGammaCorrectionValue( 1.6f );
 #ifndef GLIDE3
     grHints( GR_HINT_STWHINT, 0 );
+#else
+    Glide.State.STWHint = 0;
 #endif
 
 #ifdef OGL_DONE
@@ -674,22 +681,12 @@ grSstVRetraceOn( void )
 	 * for some stupid games which waiting for retrace and
 	 * and after for retrace ends. Forever.
 	 */
-	static FxBool last = FXFALSE;
-	
 #ifdef OGL_NOTDONE
     GlideMsg( "grSstVRetraceOn( )\n" );
 #endif
-		if(last == FXFALSE)
-		{
-			last = FXTRUE;
-		}
-		else
-		{
-			last = FXFALSE;
-		}
+		Glide.State.VRetrace ^= 1;
 
-    //return Glide.State.VRetrace;
-    return last;
+    return Glide.State.VRetrace;
 }
 
 //*************************************************
@@ -718,15 +715,17 @@ grSstControl( FxU32 code )
 FX_ENTRY FxBool FX_CALL
 grSstControlMode( GrControl_t mode )
 { 
-#ifdef OGL_NOTDONE
+#ifdef OGL_PARTDONE
     GlideMsg( "grSstControlMode( %d )\n", mode );
 #endif
 
     switch ( mode )
     {
     case GR_CONTROL_ACTIVATE:
+    	  Activate3DWindow();
         break;
     case GR_CONTROL_DEACTIVATE:
+    	  Deactivate3DWindow();
         break;
     case GR_CONTROL_RESIZE:
     case GR_CONTROL_MOVE:
@@ -748,6 +747,8 @@ grSstStatus( void )
 
 //    FxU32 Status = 0x0FFFF43F;
     FxU32 Status = 0x0FFFF03F;
+    
+    Glide.State.VRetrace ^= 1;
     
     // Vertical Retrace
     Status      |= ( ! Glide.State.VRetrace ) << 6;

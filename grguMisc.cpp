@@ -298,8 +298,18 @@ static GrCoordinateSpaceMode_t Glide3CoordinateSpaceMode = GR_WINDOW_COORDS;
 /* Glide3.x */
 static bool AAOrdered = false;
 
+void FX_CALL grGetGammaTableExt( FxU32 nentries, FxU32 *red, FxU32 *green, FxU32 *blue)
+{
+	
+}
+
 FX_ENTRY GrProc FX_CALL grGetProcAddress(char *procName)
 {
+	if (strcmp(procName, "grGetGammaTableExt") == 0)
+	{
+		return (GrProc)&grGetGammaTableExt;
+	}
+	
 	return NULL;
 }
 
@@ -310,8 +320,10 @@ FX_ENTRY void FX_CALL grEnable( GrEnableMode_t mode)
 		case GR_AA_ORDERED:
 			AAOrdered = true;
 			break;
-		case GR_ALLOW_MIPMAP_DITHER:
 		case GR_PASSTHRU:
+			Activate3DWindow();
+			break;
+		case GR_ALLOW_MIPMAP_DITHER:
 		case GR_VIDEO_SMOOTHING:
 		case GR_SHAMELESS_PLUG:
 			break;
@@ -325,29 +337,49 @@ FX_ENTRY void FX_CALL grDisable ( GrEnableMode_t mode)
 		case GR_AA_ORDERED:
 			AAOrdered = false;
 			break;
-		case GR_ALLOW_MIPMAP_DITHER:
 		case GR_PASSTHRU:
+			Deactivate3DWindow();
+			break;
+		case GR_ALLOW_MIPMAP_DITHER:
 		case GR_VIDEO_SMOOTHING:
 		case GR_SHAMELESS_PLUG:
 			break;
 	}
 }
 
-static short VXLPosition[GR_PARAM_SIZE] = {};
-static unsigned char  VXLEnabled[GR_PARAM_SIZE] = {};
+enum {
+	GR_PARAM_POS_XY = 0,
+	GR_PARAM_POS_Z,
+	GR_PARAM_POS_W,
+	GR_PARAM_POS_Q,
+	GR_PARAM_POS_FOG_EXT,
+	GR_PARAM_POS_ST0,
+	GR_PARAM_POS_ST1,
+	GR_PARAM_POS_ST2,
+	GR_PARAM_POS_Q0,
+	GR_PARAM_POS_Q1,
+	GR_PARAM_POS_Q2,
+	GR_PARAM_POS_A,
+	GR_PARAM_POS_RGB,
+	GR_PARAM_POS_PARGB,
+	GR_PARAM_POS_SIZE
+} gr_param_pos_t;
+
+static FxI32 VXLPosition[GR_PARAM_POS_SIZE] = {};
 
 void VXLInit()
 {
-	for(int i = 0; i < GR_PARAM_SIZE; i++)
+	for(int i = GR_PARAM_POS_XY; i < GR_PARAM_POS_SIZE; i++)
 	{
 		VXLPosition[i] = 0;
-		VXLEnabled[i] = false;
 	}
 	
 	Glide3CoordinateSpaceMode = GR_WINDOW_COORDS;
 };
 
-#define VXLGetFloat(_t, _p, _n) if(VXLEnabled[_p]){ \
+#define VXLGetOffset(_p) VXLPosition[(_p)]
+
+#define VXLGetFloat(_t, _p, _n) if(VXLGetOffset(_p) != 0){ \
 	_t = ((float*)(mem+VXLPosition[_p]))[_n]; \
 	}
 
@@ -355,29 +387,36 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 {
 	const unsigned char *mem = (const unsigned char *)ptr;
 	memset(v, 0, sizeof(GrVertex));
+	float fog = 1;
 	
-	VXLGetFloat(v->x,   GR_PARAM_XY, 0);
-	VXLGetFloat(v->y,   GR_PARAM_XY, 1);
-	VXLGetFloat(v->ooz, GR_PARAM_Z,  0);
+	//VXLGetFloat(v->x,   GR_PARAM_POS_XY, 0);
+	//VXLGetFloat(v->y,   GR_PARAM_POS_XY, 1);
+	/* Glide 3 reference, p. 177: Required. Must be at offset 0. */
+	v->x = ((float*)mem)[0];
+	v->y = ((float*)mem)[1];
+	
+	VXLGetFloat(v->ooz, GR_PARAM_POS_Z,  0);
 	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
 	{
-		VXLGetFloat(v->oow, GR_PARAM_W,  0);
+		VXLGetFloat(v->oow, GR_PARAM_POS_W,  0);
+		VXLGetFloat(fog,    GR_PARAM_POS_Q,  0);
 	}
 	else
 	{
-		VXLGetFloat(v->oow, GR_PARAM_Q,  0);
+		VXLGetFloat(v->oow, GR_PARAM_POS_Q,       0);
+		VXLGetFloat(fog,    GR_PARAM_POS_FOG_EXT, 0);
 	}
 	
-	if(!VXLEnabled[GR_PARAM_PARGB])
+	if(VXLGetOffset(GR_PARAM_POS_PARGB) == 0)
 	{
-		VXLGetFloat(v->r,   GR_PARAM_RGB, 0);
-		VXLGetFloat(v->g,   GR_PARAM_RGB, 1);
-		VXLGetFloat(v->b,   GR_PARAM_RGB, 2); 
-		VXLGetFloat(v->a,   GR_PARAM_A,   0);
+		VXLGetFloat(v->r,   GR_PARAM_POS_RGB, 0);
+		VXLGetFloat(v->g,   GR_PARAM_POS_RGB, 1);
+		VXLGetFloat(v->b,   GR_PARAM_POS_RGB, 2); 
+		VXLGetFloat(v->a,   GR_PARAM_POS_A,   0);
 	}
 	else
 	{
-		FxU32 argb = *((FxU32*)(mem+VXLPosition[GR_PARAM_PARGB]));
+		FxU32 argb = *((FxU32*)(mem+VXLPosition[GR_PARAM_POS_PARGB]));
 		
 		v->a = ((argb >> 24) & 0xFF) * 1.0f;
 		v->b = ((argb >> 16) & 0xFF) * 1.0f;
@@ -385,47 +424,73 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 		v->r =         (argb & 0xFF) * 1.0f;
 	}
 	
-	VXLGetFloat(v->tmuvtx[0].sow , GR_PARAM_ST0, 0);
-	VXLGetFloat(v->tmuvtx[0].tow , GR_PARAM_ST0, 1);
-	VXLGetFloat(v->tmuvtx[0].oow , GR_PARAM_Q0, 0);
+	VXLGetFloat(v->tmuvtx[0].oow, GR_PARAM_POS_Q0,  0);
+	VXLGetFloat(v->tmuvtx[0].sow, GR_PARAM_POS_ST0, 0);
+	VXLGetFloat(v->tmuvtx[0].tow, GR_PARAM_POS_ST0, 1);
 	
 #if GLIDE_MAX_NUM_TMU > 1
-	VXLGetFloat(v->tmuvtx[1].sow , GR_PARAM_ST1, 0);
-	VXLGetFloat(v->tmuvtx[1].tow , GR_PARAM_ST1, 1);
-	VXLGetFloat(v->tmuvtx[1].oow , GR_PARAM_Q1, 0);
+	VXLGetFloat(v->tmuvtx[1].oow, GR_PARAM_POS_Q1,  0);
+	VXLGetFloat(v->tmuvtx[1].sow, GR_PARAM_POS_ST1, 0);
+	VXLGetFloat(v->tmuvtx[1].tow, GR_PARAM_POS_ST1, 1);
 #endif
 	
 #if GLIDE_MAX_NUM_TMU > 2
-	VXLGetFloat(v->tmuvtx[2].sow , GR_PARAM_ST2, 0);
-	VXLGetFloat(v->tmuvtx[2].tow , GR_PARAM_ST2, 1);
-	VXLGetFloat(v->tmuvtx[2].oow , GR_PARAM_Q2, 0);
+	VXLGetFloat(v->tmuvtx[2].oow, GR_PARAM_POS_Q2,  0);
+	VXLGetFloat(v->tmuvtx[2].sow, GR_PARAM_POS_ST2, 0);
+	VXLGetFloat(v->tmuvtx[2].tow, GR_PARAM_POS_ST2, 1);
 #endif
 	
 	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
 	{
+		float q = 65535.0f;
+		//float z = 65535.0f;
 		if(v->oow != 0)
 		{
-			const float q =  1.f / v->oow;
-			float z =  1.f / v->ooz;
-		
-			v->oow = q;
-      v->x = v->x * q * Glide3ViewPort[2] * 0.5f + Glide3ViewPort[2] * 0.5f;
-      v->y = v->y * q * Glide3ViewPort[3] * 0.5f + Glide3ViewPort[3] * 0.5f;
-            
-      z = z * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
-      v->ooz = 1.f / z;
-
-			v->r *= 255.f;
-			v->g *= 255.f;
-			v->b *= 255.f;
-			v->a *= 255.f;
+			q = 1.f / v->oow;
 		}
+		
+		v->oow = q;
+    v->x = v->x * q * Glide3ViewPort[2] * 0.5f + Glide3ViewPort[2] * 0.5f;
+    v->y = v->y * q * Glide3ViewPort[3] * 0.5f + Glide3ViewPort[3] * 0.5f;
+    
+    /*if(v->ooz != 0)
+    {
+    	z =  1.f / v->ooz;
+    }*/
+            
+    //z = z * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
+    //v->ooz = 1.f / z;
+    v->ooz = v->ooz * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
+
+		v->r *= 255.f;
+		v->g *= 255.f;
+		v->b *= 255.f;
+		v->a *= 255.f;
+		
+		//v->tmuvtx[0].oow = v->tmuvtx[0].oow * q * 256.0f;
+		v->tmuvtx[0].sow = v->tmuvtx[0].sow * q * 256.0f;
+		v->tmuvtx[0].tow = v->tmuvtx[0].tow * q * 256.0f;
+		
+#if GLIDE_MAX_NUM_TMU > 1
+
+		//v->tmuvtx[1].oow = v->tmuvtx[1].oow * q * 256.0f;
+		v->tmuvtx[1].sow = v->tmuvtx[1].sow * q * 256.0f;
+		v->tmuvtx[1].tow = v->tmuvtx[1].tow * q * 256.0f;
+#endif
+		
+#if GLIDE_MAX_NUM_TMU > 2
+		//v->tmuvtx[2].oow = v->tmuvtx[2].oow * q * 256.0f;
+		v->tmuvtx[2].sow = v->tmuvtx[2].sow * q * 256.0f;
+		v->tmuvtx[2].tow = v->tmuvtx[2].tow * q * 256.0f;
+#endif
+		
 	}
 }
 
 FX_ENTRY void FX_CALL grCoordinateSpace( GrCoordinateSpaceMode_t mode )
 {
 	Glide3CoordinateSpaceMode = mode;
+	GlideMsg( "grCoordinateSpace(%d)\n", mode );
 }
 
 FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointers )
@@ -667,14 +732,16 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 }
 #undef PVERTEX
 
-FX_ENTRY void FX_CALL grFinish ( void )
-{
-	
-}
-
 FX_ENTRY void FX_CALL grFlush ( void )
 {
-	
+	RenderDrawTriangles();
+	glFlush();
+	glFinish();
+}
+
+FX_ENTRY void FX_CALL grFinish ( void )
+{
+	grFlush();
 }
 
 static inline FxU32 grGet_fill_buffer(void *dst, FxU32 dstlen, const void *src, FxU32 srclen)
@@ -690,15 +757,18 @@ static inline FxU32 grGet_fill_buffer(void *dst, FxU32 dstlen, const void *src, 
 	return size;
 }
 
-static inline void grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
+static inline FxU32 grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
 {
 	if(dstlen >= 4)
 	{
 		*dst = n;
+		return 4;
 	}
+	
+	return 0;
 }
 
-FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
+FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 {
 	static const FxU32 rgba_bits[] = {5, 6, 5, 0};
 	
@@ -707,20 +777,17 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_BITS_DEPTH:
 			/* 1 4
 			The number of bits of depth (z or w) in the frame buffer. */
-			grGet_fill_num(plength, params, 16);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 16);
 		case GR_BITS_RGBA:
 			/*4 16
 			The number of bits each of red, green, blue, alpha in the frame buffer. If there is no separate alpha buffer
 			(e.g. on Voodoo2, the depth buffer can be used as an alpha buffer), 0 will be returned for alpha bits.*/
-			grGet_fill_buffer(params, plength, rgba_bits, 16);
-			return FXTRUE;
+			return grGet_fill_buffer(params, plength, rgba_bits, 16);
 		case GR_BITS_GAMMA:
 			/*1 4
 			The number of bits for each channel in the gamma table. If gamma correction is not available,
 			grGet will fail, and the params array will be unmodified.*/
-			grGet_fill_num(plength, params, 8);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 8);
 		case GR_FIFO_FULLNESS:
 			/*2 8
 			How full the FIFO is, as a percentage. The value is returned in two forms: 1.24 fixed point and a hardware-specific format. */
@@ -728,75 +795,64 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_FOG_TABLE_ENTRIES:
 			/*1 4
 			The number of entries in the hardware fog table.*/
-			grGet_fill_num(plength, params, 64); /* ? */
-			return FXTRUE;
+			return grGet_fill_num(plength, params, GR_FOG_TABLE_SIZE);
 		case GR_GAMMA_TABLE_ENTRIES:
 			/*1 4
 			The number of entries in the hardware gamma table. Returns FXFALSE if it is not possible to manipulate gamma
 			(e.g. on a Macronix card, or in windowed mode).*/
-			grGet_fill_num(plength, params, 256);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 256);
 		case GR_GLIDE_STATE_SIZE:
 			/*1 4
 			Size of buffer, in bytes, needed to save Glide state. See grGlideGetState.*/
-			grGet_fill_num(plength, params, sizeof(GlideState));
-			return FXTRUE;
+			return grGet_fill_num(plength, params, sizeof(GlideState));
 		case GR_GLIDE_VERTEXLAYOUT_SIZE:
 			/*1 4
 			Size of buffer, in bytes, needed to save the current vertex layout.
 			See grGlideGetVertexLayout.*/
-			grGet_fill_num(plength, params, 256);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 256);
 		case GR_IS_BUSY:
 			/*1 4
 			Returns FXFALSE if idle, FXTRUE if busy.*/
-			grGet_fill_buffer(params, plength, {FXFALSE}, 4);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, FXFALSE);
 		case GR_LFB_PIXEL_PIPE:
 			/*1 4
 			Returns FXTRUE if LFB writes can go through the 3D 
 			pixel pipe, FXFALSE otherwise.*/
-			break;
+			return grGet_fill_num(plength, params, FXFALSE);
 		case GR_MAX_TEXTURE_SIZE:
 			/* 1 4
 			The width of the largest texture supported on this configuration (e.g. Voodoo Graphics returns 256). */
-			grGet_fill_num(plength, params, 256);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 256);
 		case GR_MAX_TEXTURE_ASPECT_RATIO:
 			 /* 1 4
 			 The logarithm base 2 of the maximum aspect ratio supported for power-of-two, mipmap-able textures (e.g. Voodoo Graphics returns 3). */
-			 grGet_fill_num(plength, params, 3);
-			 return FXTRUE;
+			 return grGet_fill_num(plength, params, 3);
 		case GR_MEMORY_FB:
 			/* 1 4
 			The total number of bytes per Pixelfx chip if a non-UMA configuration is used, else 0. In non-UMA configurations, the total FB memory is GR_MEMORY_FB * GR_NUM_FB.*/
-			grGet_fill_num(plength, params, UserConfig.FrameBufferMemorySize*0x100000);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, UserConfig.FrameBufferMemorySize*0x100000);
 		case GR_MEMORY_TMU:
 			/* 1 4
 			The total number of bytes per Texelfx chip if a non-UMA configuration is used, else FXFALSE. In non-UMA configurations, the total usable texture memory is GR_MEMORY_TMU * GR_NUM_TMU.*/
-			grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU*UserConfig.TextureMemorySize*0x100000);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU*UserConfig.TextureMemorySize*0x100000);
 		case GR_MEMORY_UMA:
 			/* 1 4
 			The total number of bytes if a UMA configuration, else 0. */
-			grGet_fill_num(plength, params, 4);
-			return FXTRUE;
+			//return grGet_fill_num(plength, params, 4);
+			return grGet_fill_num(plength, params, 0);
 		case GR_NON_POWER_OF_TWO_TEXTURES:
 			/* 1 4
 			Returns FXTRUE if this configuration supports textures with arbitrary width and height (up to the maximum). Note that only power-of-two textures may be mipmapped. Not implemented in the initial release of Glide 3.0. */
-			break;
+			return grGet_fill_num(plength, params, FXFALSE);
 		case GR_NUM_BOARDS:
 			/* 1 4
 			The number of installed boards supported by Glide. Valid before a call to grSstWinOpen.*/
-			grGet_fill_num(plength, params, 1);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 1);
 			//break;
 		case GR_NUM_FB:
 			/*1 4
 			The number of Pixelfx chips present. This number will always be 1 except for SLI configurations.*/
-			grGet_fill_num(plength, params, 1);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 1);
 		case GR_NUM_SWAP_HISTORY_BUFFER:
 			/* 1 4
 			Number of entries in the swap history buffer. Each entry is 4 bytes long. */
@@ -804,23 +860,19 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_NUM_TMU:
 			/* 1 4
 			The number of Texelfx chips per Pixelfx chip. For integrated chips, the number of TMUs will be returned.*/
-			grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU);
 		case GR_PENDING_BUFFERSWAPS:
 			/* 1 4
 			The number of buffer swaps pending. */
-			grGet_fill_num(plength, params, 0);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 0);
 		case GR_REVISION_FB:
 			/* 1 4
 			The revision of the Pixelfx chip(s). */
-			grGet_fill_num(plength, params, 2);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 2);
 		case GR_REVISION_TMU:
 			/* 1 4
 			The revision of the Texelfx chip(s). */
-			grGet_fill_num(plength, params, 1);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 1);
 		case GR_STATS_LINES:
 			/* 1 4
 			The number of lines drawn. */
@@ -864,13 +916,11 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_SUPPORTS_PASSTHRU:
 			/*1 4
 			Returns FXTRUE if pass through mode is supported. See grEnable.*/
-			grGet_fill_num(plength, params, FXFALSE);
-			return FXTRUE;
+			return grGet_fill_num(plength, params, FXFALSE);
 		case GR_TEXTURE_ALIGN:
 			/*1 4
 			The alignment boundary for textures. For example, if textures must be 16-byte aligned, 0x10 would be returned.*/
-			grGet_fill_num(plength, params, 256); /*256;*/
-			return FXTRUE;
+			return grGet_fill_num(plength, params, 256); /*256;*/
 		case GR_VIDEO_POSITION:
 			/*2 8
 			Vertical and horizontal beam location. Vertical retrace is indicated by y == 0.*/
@@ -878,26 +928,26 @@ FX_ENTRY FxBool FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_VIEWPORT:
 			/*4 16
 			x, y, width, height.*/
-			grGet_fill_buffer(params, plength, &Glide3ViewPort[0], 4*4);
-			return FXTRUE;
+			return grGet_fill_buffer(params, plength, &Glide3ViewPort[0], 4*4);
 		case GR_WDEPTH_MIN_MAX:
 			/*2 8
 			The minimum and maximum allowable wbuffer values.*/
-			grGet_fill_buffer(params, plength, &Glide3DepthRange[0], 2*sizeof(float));
-			return FXTRUE;
+			{
+				FxU32 wMinMax[] = {(FxU32)Glide3DepthRange[0], (FxU32)Glide3DepthRange[1]};
+				return grGet_fill_buffer(params, plength, &wMinMax[0], sizeof(wMinMax));
+			}
 		case GR_ZDEPTH_MIN_MAX:
 			/*2 8
 			The minimum and maximum allowable zbuffer values.*/
 			{
-				const float zDefault[] = {0.f, 65535.f};
-				grGet_fill_buffer(params, plength, &zDefault[0], 2*sizeof(float));
+				const FxU32 zDefault[] = {65535, 0};
+				return grGet_fill_buffer(params, plength, &zDefault[0], sizeof(zDefault));
 			}
-			return FXTRUE;
 	}
 	
 	// manual page .p79 (87)
 	
-	return FXFALSE;
+	return 0;
 }
 
 FX_ENTRY void FX_CALL grDepthRange( FxFloat n, FxFloat f )
@@ -907,7 +957,7 @@ FX_ENTRY void FX_CALL grDepthRange( FxFloat n, FxFloat f )
 }
 
 const char *string_tables[] = {
-	" ",
+	" GETGAMMA ",
 	"Voodoo Graphics",
 	"Glide",
 	"3Dfx Interactive",
@@ -927,13 +977,11 @@ FX_ENTRY const char * FX_CALL grGetString( FxU32 pname )
 FX_ENTRY void FX_CALL grGlideGetVertexLayout( void *layout )
 {
 	memcpy(layout, VXLPosition, sizeof(VXLPosition));
-	memcpy(((unsigned char*)layout)+sizeof(VXLPosition), VXLEnabled, sizeof(VXLEnabled));	
 }
 
 FX_ENTRY void FX_CALL grGlideSetVertexLayout( const void *layout )
 {
 	memcpy(VXLPosition, layout, sizeof(VXLPosition));
-	memcpy(VXLEnabled, ((unsigned char*)layout)+sizeof(VXLPosition), sizeof(VXLEnabled));	
 }
 
 FX_ENTRY void FX_CALL grLoadGammaTable( FxU32 nentries, FxU32 *red, FxU32 *green, FxU32 *blue){ }
@@ -1003,6 +1051,10 @@ FX_ENTRY FxBool FX_CALL grSelectContext( GrContext_t context )
 {
 	if(context == 1) return FXTRUE; /* only one context */
 	
+#ifdef OGL_NOTDONE
+    GlideMsg( "grSelectContext - only 1 context, required: %d\n", context );
+#endif
+
 	return FXFALSE;
 }
 
@@ -1013,30 +1065,48 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 		switch(param)
 		{
 			case GR_PARAM_XY:
+				VXLPosition[GR_PARAM_POS_XY] = offset;
+				break;
 			case GR_PARAM_Z:
+				VXLPosition[GR_PARAM_POS_Z] = offset;
+				break;
 			case GR_PARAM_Q:
+				VXLPosition[GR_PARAM_POS_Q] = offset;
+				break;
 			case GR_PARAM_W:
-				VXLPosition[param] = offset;
-				VXLEnabled[param] = true;
+				VXLPosition[GR_PARAM_POS_W] = offset;
 				break;
 			case GR_PARAM_A:
+				VXLPosition[GR_PARAM_POS_A] = offset;
+				VXLPosition[GR_PARAM_POS_PARGB] = 0;
+				break;
 			case GR_PARAM_RGB:
-				VXLPosition[param] = offset;
-				VXLEnabled[param] = true;
-				VXLEnabled[GR_PARAM_PARGB] = false;
+				VXLPosition[GR_PARAM_POS_RGB] = offset;
+				VXLPosition[GR_PARAM_POS_PARGB] = 0;
 				break;
 			case GR_PARAM_PARGB:
-				VXLPosition[param] = offset;
-				VXLEnabled[GR_PARAM_PARGB] = true;
+				VXLPosition[GR_PARAM_POS_PARGB] = offset;
 				break;
 			case GR_PARAM_ST0:
+				VXLPosition[GR_PARAM_POS_ST0] = offset;
+				break;
 			case GR_PARAM_ST1:
+				VXLPosition[GR_PARAM_POS_ST1] = offset;
+				break;
 			case GR_PARAM_ST2:
+				VXLPosition[GR_PARAM_POS_ST2] = offset;
+				break;
 			case GR_PARAM_Q0:
+				VXLPosition[GR_PARAM_POS_Q0] = offset;
+				break;
 			case GR_PARAM_Q1:
+				VXLPosition[GR_PARAM_POS_Q1] = offset;
+				break;
 			case GR_PARAM_Q2:
-				VXLPosition[param] = offset;
-				VXLEnabled[param] = true;
+				VXLPosition[GR_PARAM_POS_Q2] = offset;
+				break;
+			case GR_PARAM_FOG_EXT:
+				VXLPosition[GR_PARAM_POS_FOG_EXT] = offset;
 				break;
 		}
 	}
@@ -1045,21 +1115,54 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 		switch(param)
 		{
 			case GR_PARAM_XY:
-			case GR_PARAM_Z:
-			case GR_PARAM_Q:
-			case GR_PARAM_W:
-			case GR_PARAM_ST0:
-			case GR_PARAM_ST1:
-			case GR_PARAM_ST2:
-			case GR_PARAM_Q0:
-			case GR_PARAM_Q1:
-			case GR_PARAM_Q2:
-			case GR_PARAM_A:
-			case GR_PARAM_RGB:
-			case GR_PARAM_PARGB:
-				VXLEnabled[param] = false;
+				VXLPosition[GR_PARAM_POS_XY] = 0;
 				break;
+			case GR_PARAM_Z:
+				VXLPosition[GR_PARAM_POS_Z] = 0;
+				break;
+			case GR_PARAM_Q:
+				VXLPosition[GR_PARAM_POS_Q] = 0;
+				break;
+			case GR_PARAM_W:
+				VXLPosition[GR_PARAM_POS_W] = 0;
+				break;
+			case GR_PARAM_A:
+				VXLPosition[GR_PARAM_POS_A] = 0;
+				break;
+			case GR_PARAM_RGB:
+				VXLPosition[GR_PARAM_POS_RGB] = 0;
+				break;
+			case GR_PARAM_PARGB:
+				VXLPosition[GR_PARAM_POS_PARGB] = 0;
+				break;
+			case GR_PARAM_ST0:
+				VXLPosition[GR_PARAM_POS_ST0] = 0;
+				break;
+			case GR_PARAM_ST1:
+				VXLPosition[GR_PARAM_POS_ST1] = 0;
+				break;
+			case GR_PARAM_ST2:
+				VXLPosition[GR_PARAM_POS_ST2] = 0;
+				break;
+			case GR_PARAM_Q0:
+				VXLPosition[GR_PARAM_POS_Q0] = 0;
+				break;
+			case GR_PARAM_Q1:
+				VXLPosition[GR_PARAM_POS_Q1] = 0;
+				break;
+			case GR_PARAM_Q2:
+				VXLPosition[GR_PARAM_POS_Q2] = 0;
+				break;
+			case GR_PARAM_FOG_EXT:
+				VXLPosition[GR_PARAM_POS_FOG_EXT] = 0;
 		}
+	}
+	// Fog hack by kjliew
+	if(VXLPosition[GR_PARAM_POS_Q1] != 0 && VXLPosition[GR_PARAM_POS_Q1] == VXLPosition[GR_PARAM_POS_Q2])
+	{
+		GrFog_t fto[GR_FOG_TABLE_SIZE];
+		guFogGenerateExp(fto, 1.f / guFogTableIndexToW(GR_FOG_TABLE_SIZE - 1));
+		grFogTable(fto);
 	}
 }
 

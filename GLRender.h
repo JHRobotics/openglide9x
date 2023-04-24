@@ -103,10 +103,21 @@ typedef void  (*COLORFUNCTIONPROC)( TColorStruct * pC, TColorStruct * pC2, TColo
 void RenderInitialize( void );
 void RenderFree( void );
 void RenderUpdateArrays( void );
+#ifndef OGL_DEBUG_HEAVY
 void RenderAddTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c, bool unsnap );
+void RenderDrawTriangles( void );
+#else
+void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVertex *c, bool unsnap, const char *fn, const int line);
+#define RenderAddTriangle(_a, _b, _c, _unsap) RenderAddTriangle_traced(_a, _b, _c, _unsap, __FILE__, __LINE__)
+
+void RenderDrawTriangles_traced( const char *fn, const int line );
+#define RenderDrawTriangles() RenderDrawTriangles_traced(__FILE__, __LINE__)
+
+#endif
+
+
 void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap );
 void RenderAddPoint( const GrVertex *a, bool unsnap );
-void RenderDrawTriangles( void );
 
 // Main Render variables
 extern RenderStruct		    OGLRender;

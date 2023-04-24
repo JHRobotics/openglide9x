@@ -344,6 +344,7 @@ grAADrawPolygonVertexList( const int nverts, const GrVertex vlist[] )
     }
 }
 
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 grAADrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
                   FxBool ab_antialias, FxBool bc_antialias, FxBool ca_antialias )
@@ -361,4 +362,26 @@ grAADrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
         glFlush( );
     }
 }
+#else
+FX_ENTRY void FX_CALL
+grAADrawTriangle( const void *a1, const void *b1, const void *c1,
+                FxBool ab_antialias, FxBool bc_antialias, FxBool ca_antialias)
+{
+#ifdef OGL_CRITICAL
+    GlideMsg("grAADrawTriangle( ---, ---, ---, %d, %d, %d )\n",
+        ab_antialias, bc_antialias, ca_antialias );
+#endif
+		GrVertex a, b, c;
+		Glide3VertexUnpack(&a, a1);
+		Glide3VertexUnpack(&b, b1);
+		Glide3VertexUnpack(&c, c1);
 
+    RenderAddTriangle( &a, &b, &c, true );
+
+    if ( Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER )
+    {
+        RenderDrawTriangles( );
+        glFlush( );
+    }
+}
+#endif

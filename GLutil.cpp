@@ -34,10 +34,14 @@ extern unsigned long    NumberOfErrors;
 const char *reg_config_path = "SOFTWARE\\OpenGlide";
 HKEY        reg_config_key  = HKEY_LOCAL_MACHINE;
 
+static CRITICAL_SECTION glide_cs;
+
 // Functions
 
 VARARGDECL(void) GlideMsg( const char *szString, ... )
 {
+    EnterCriticalSection(&glide_cs);
+    
     va_list Arg;
     va_start( Arg, szString );
 
@@ -53,10 +57,14 @@ VARARGDECL(void) GlideMsg( const char *szString, ... )
    	  fclose( fHandle );
     }
     va_end( Arg );
+   
+   LeaveCriticalSection(&glide_cs);
 }
 
 VARARGDECL(void) Error( const char *szString, ... )
 {
+    EnterCriticalSection(&glide_cs);
+    
     va_list Arg;
     va_start( Arg, szString );
 
@@ -73,12 +81,15 @@ VARARGDECL(void) Error( const char *szString, ... )
           return;
       }
       vfprintf( fHandle, szString, Arg );
+      
       fflush( fHandle );
       fclose( fHandle );
     }
 
     va_end( Arg );
     NumberOfErrors++;
+    
+    LeaveCriticalSection(&glide_cs);
 }
 
 void GLErro( const char *Funcao )
@@ -88,7 +99,8 @@ void GLErro( const char *Funcao )
     if ( Erro != GL_NO_ERROR )
     {
         Error( "%s: OpenGLError = %d\n", Funcao, Erro );
-    }
+        //asm volatile (".byte 0xCC" );
+    }    
 }
 
 void ConvertColorB( GrColor_t GlideColor, FxU8 &R, FxU8 &G, FxU8 &B, FxU8 &A )
@@ -134,20 +146,20 @@ void ConvertColor4B( GrColor_t GlideColor, FxU32 &C )
         break;
 
     case GR_COLORFORMAT_ABGR:   //0xAABBGGRR
-        C = ( ( GlideColor & 0xFF00FF00 ) ||
-              ( ( GlideColor & 0x00FF0000 ) >> 16 ) ||
+        C = ( ( GlideColor & 0xFF00FF00 ) |
+              ( ( GlideColor & 0x00FF0000 ) >> 16 ) |
               ( ( GlideColor & 0x000000FF ) <<  16 ) );
         break;
 
     case GR_COLORFORMAT_RGBA:   //0xRRGGBBAA
-        C = ( ( ( GlideColor & 0x00FFFFFF ) << 8 ) ||
+        C = ( ( ( GlideColor & 0x00FFFFFF ) << 8 ) |
               ( ( GlideColor & 0xFF000000 ) >> 24 ) );
         break;
 
     case GR_COLORFORMAT_BGRA:   //0xBBGGRRAA
-        C = ( ( ( GlideColor & 0xFF000000 ) >> 24 ) ||
-              ( ( GlideColor & 0x00FF0000 ) >>  8 ) ||
-              ( ( GlideColor & 0x0000FF00 ) <<  8 ) ||
+        C = ( ( ( GlideColor & 0xFF000000 ) >> 24 ) |
+              ( ( GlideColor & 0x00FF0000 ) >>  8 ) |
+              ( ( GlideColor & 0x0000FF00 ) <<  8 ) |
               ( ( GlideColor & 0x000000FF ) << 24 ) );
         break;
     }
@@ -226,9 +238,9 @@ FxU32 GetTexSize( const int Lod, const int aspectRatio, const int format )
     ** Reduces the size by 2
     */
 #ifndef GLIDE3_ALPHA
-    return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ aspectRatio ][ Lod ];
+    return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ aspectRatio ][ Lod ];
 #else
-		return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ 3 - aspectRatio ][ 8 - Lod ];
+		return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ 3 - aspectRatio ][ 8 - Lod ];
 #endif
 }
 
@@ -495,6 +507,8 @@ bool ClearAndGenerateLogFile( void )
 {
     FILE    * GlideFile;
     char    tmpbuf[ 128 ];
+    
+    InitializeCriticalSection(&glide_cs);
 
     if(!InternalConfig.Logging)
     {
@@ -547,7 +561,7 @@ bool GenerateErrorFile( void )
 {
     char    tmpbuf[ 128 ];
     FILE    * ErrorFile;
-
+    
     ErrorFile = fopen( ERRORFILE, "w");
     if( !ErrorFile )
     {

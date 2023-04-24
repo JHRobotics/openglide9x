@@ -88,12 +88,12 @@ bool InitWindow( FxU hWnd )
     ValidateUserConfig( );
     GlideMsg( OGL_LOG_SEPARATE );
 #ifdef _WIN32
-    GetModuleFileNameA(NULL, Path, PATH_MAX-1);;
-		Path[PATH_MAX-1] = '\0';
+    GetModuleFileNameA(NULL, Path, MAX_PATH-1);;
+		Path[MAX_PATH-1] = '\0';
 		GlideMsg( "Application EXE: %s\n", Path);
 		
-		GetModuleFileNameA(glideDLLInt, Path, PATH_MAX-1);;
-		Path[PATH_MAX-1] = '\0';
+		GetModuleFileNameA(glideDLLInt, Path, MAX_PATH-1);;
+		Path[MAX_PATH-1] = '\0';
 		GlideMsg( "OpenGlide DLL: %s\n", Path);
 #endif
     

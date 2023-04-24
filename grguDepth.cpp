@@ -135,8 +135,11 @@ grDepthBufferFunction( GrCmpFnc_t func )
 //*************************************************
 //* Set the depth bias level
 //*************************************************
-FX_ENTRY void FX_CALL
-grDepthBiasLevel( FxI16 level )
+#ifndef GLIDE3
+FX_ENTRY void FX_CALL grDepthBiasLevel( FxI16 level )
+#else
+FX_ENTRY void FX_CALL grDepthBiasLevel( FxU32 level )
+#endif
 {
 #ifdef OGL_PARTDONE
     GlideMsg( "grDepthBiasLevel( %d )\n", level );
@@ -146,7 +149,16 @@ grDepthBiasLevel( FxI16 level )
 
     Glide.State.DepthBiasLevel = level;
     //OpenGL.DepthBiasLevel = level * D1OVER65536;
-    OpenGL.DepthBiasLevel = level * 10.0f;
+    //OpenGL.DepthBiasLevel = level * 10.0f;
+    if(OpenGL.DepthBufferType)
+    {
+    	OpenGL.DepthBiasLevel = level * 128.0f;
+    }
+    else
+    {
+    	//OpenGL.DepthBiasLevel = level * 10.0f;
+    	OpenGL.DepthBiasLevel = level;
+    }
 
     glPolygonOffset( 1.0f, OpenGL.DepthBiasLevel );
 

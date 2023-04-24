@@ -27,9 +27,13 @@
 
 #include "platform/window.h"
 
+#include <GL/gl.h>
+#include "GL/glext.h"
+
 static HDC   hDC;
 static HGLRC hRC;
 static HWND  hWND;
+static HWND  hWND_parent;
 static bool  hWND_created;
 static struct
 {
@@ -56,7 +60,7 @@ LRESULT CALLBACK DrawWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	return 0;
 }
 
-BOOL RegisterWinClass()
+BOOL RegisterOGLClass()
 {
 	WNDCLASSA wc      = {0};
 	wc.lpfnWndProc   = DrawWndProc;
@@ -65,12 +69,18 @@ BOOL RegisterWinClass()
 	wc.lpszClassName = GLIDE_WND_CLASS_NAME;
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	
-	if( !RegisterClass(&wc) )
+	if(RegisterClassA(&wc) == 0)
 	{
-		return TRUE;
+		if(GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
+		{
+			char buf[256];
+			sprintf(buf, "RegisterClassA failure %u", GetLastError());		
+    	MessageBox( NULL, buf, "Error", MB_OK );
+			return FALSE;
+		}
 	}
 	
-	return FALSE;
+	return TRUE;
 }
 
 /* Hook proc for glide window to hide annoing cursor pointer */
@@ -107,54 +117,89 @@ BOOL setVSync()
 extern HCURSOR hTransparent;
 extern HCURSOR hDefault;
 
+void APIENTRY MessageCallback( GLenum source,
+                 GLenum type,
+                 GLuint id,
+                 GLenum severity,
+                 GLsizei length,
+                 const GLchar* message,
+                 const void* userParam )
+{
+	GlideMsg( "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", 
+	(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, message );
+}
+
 bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
 {
     PIXELFORMATDESCRIPTOR   pfd;
     int                     PixFormat;
     unsigned int            BitsPerPixel;
-    HWND                    hwnd = (HWND) wnd;
-
-    if( hwnd == NULL )
+    HWND                    phwnd = (HWND) wnd;
+    HWND                    hwnd = NULL;
+    
+    if( phwnd == NULL )
     {
-        hwnd = GetActiveWindow();
+      phwnd = GetActiveWindow();
     }
     
+    if(phwnd == NULL && !UserConfig.CreateWindow)
+    {
+    	MessageBox( NULL, "NULL window specified", "Error", MB_OK );
+    	exit(1);
+    }
+        
     hWND_created = false;
-
-    if(hwnd == NULL && UserConfig.CreateWindow)
+    
+    if(phwnd == NULL)
     {
-    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide fake window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS, 0, 0, width, height, NULL, NULL, glideDLLInt, NULL);
+    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+    		0, 0, width, height,
+    		NULL, NULL, glideDLLInt, NULL);
     	hWND_created = true;
+    	
+			if(UserConfig.InitFullScreen)
+		  {
+		    mode_changed = SetScreenMode(width, height);
+		  }
+    }
+    else if(phwnd != NULL)
+    {
+			if(UserConfig.InitFullScreen)
+		  {
+		      SetWindowLong(phwnd, GWL_STYLE,  WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		      MoveWindow(phwnd, 0, 0, width, height, false);
+		      mode_changed = SetScreenMode(width, height);
+		  }
+		  else
+		  {
+		     RECT rect;
+		     rect.left = 0;
+		     rect.right = width;
+		     rect.top = 0;
+		     rect.bottom = height;
+		     
+		     //LONG s = GetWindowLong(phwnd, GWL_STYLE) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+		     LONG s = GetWindowLong(phwnd, GWL_STYLE);
+		
+		     AdjustWindowRectEx(&rect, s, GetMenu(phwnd) != NULL, GetWindowLong(phwnd, GWL_EXSTYLE));
+		     MoveWindow(phwnd, x, y, x + ( rect.right - rect.left ), y + ( rect.bottom - rect.top ), true);
+		  }
+    	
+/*    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide inner window", WS_CHILD | WS_VISIBLE,
+    		0, 0, width, height,
+    		phwnd, NULL, glideDLLInt, NULL);
+    	hWND_created = true;*/
+    	hwnd = phwnd;
     }
     
-    if ( hwnd == NULL)
+    if(hwnd == NULL)
     {
         MessageBox( NULL, "NULL window specified", "Error", MB_OK );
         exit( 1 );
     }
-    // if we haven window we will create some
-
-    mode_changed = false;
     
+    hWND_parent = phwnd;
     hWND = hwnd;
-    
-		if (UserConfig.InitFullScreen)
-	  {
-	      SetWindowLong(hwnd, GWL_STYLE,  WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-	      MoveWindow(hwnd, 0, 0, width, height, false);
-	      mode_changed = SetScreenMode( width, height );
-	  }
-	  else
-	  {
-	     RECT rect;
-	     rect.left = 0;
-	     rect.right = width;
-	     rect.top = 0;
-	     rect.bottom = height;
-	
-	     AdjustWindowRectEx(&rect, GetWindowLong(hwnd, GWL_STYLE), GetMenu(hwnd) != NULL, GetWindowLong(hwnd, GWL_EXSTYLE));
-	     MoveWindow(hwnd, x, y, x + ( rect.right - rect.left ), y + ( rect.bottom - rect.top ), true);
-	  }
     
     switch(UserConfig.HideCursor)
     {
@@ -165,10 +210,6 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     		SetSystemCursor(hTransparent, OCR_NORMAL);
     		break;
     }
-    
-    //win_hook = SetWindowsHookExA(WH_CALLWNDPROCRET /*WH_CALLWNDPROC*/, GlideHookProc, NULL, GetCurrentThreadId());
-    //win_hook = SetWindowsHookExA(WH_CALLWNDPROC /*WH_CALLWNDPROC*/, GlideHookProc, glideDLLInt, 0);
-
 
 
     hDC = GetDC( hWND );
@@ -210,6 +251,20 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     hRC = wglCreateContext( hDC );
     wglMakeCurrent( hDC, hRC );
     
+    PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
+    
+#ifdef OGL_DEBUG_HEAVY
+    if(p_glDebugMessageCallback != NULL)
+    {
+    	glEnable(GL_DEBUG_OUTPUT);
+			p_glDebugMessageCallback(MessageCallback, 0);
+		}
+		else
+		{
+			MessageBox( NULL, "get glDebugMessageCallback failed!", "wglGetProcAddress", MB_OK );
+		}
+#endif
+    
     setVSync();
 
     HDC pDC = GetDC( NULL );
@@ -217,6 +272,12 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     ramp_stored = GetDeviceGammaRamp( pDC, &old_ramp );
 
     ReleaseDC( NULL, pDC );
+    
+    if(hWND_parent)
+    {
+    	UpdateWindow(hWND_parent);
+    }
+    
     return true;
 }
 
@@ -315,6 +376,20 @@ bool SetScreenMode(int &xsize, int &ysize)
 void ResetScreenMode()
 {
     ChangeDisplaySettings( NULL, 0 );
+}
+
+void Activate3DWindow()
+{
+#ifdef OGL_NOTDONE
+    GlideMsg( "Activate3DWindow()\n" );
+#endif
+}
+
+void Deactivate3DWindow()
+{
+#ifdef OGL_NOTDONE
+    GlideMsg( "Deactivate3DWindow()\n" );
+#endif
 }
 
 void SwapBuffers()

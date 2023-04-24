@@ -557,9 +557,9 @@ void ConvertAP88to8888( FxU16 *Buffer1, FxU32 *Buffer2, FxU32 Pixels, FxU32 *pal
 
 void ConvertYIQto8888( FxU8 *in, FxU32 *out, FxU32 Pixels, GuNccTable *ncc )
 {
-    FxU32  R;
-    FxU32  G;
-    FxU32  B;
+    FxI32  R;
+    FxI32  G;
+    FxI32  B;
 
     for ( FxU32 i = Pixels; i > 0; i-- )
     {
@@ -585,9 +585,9 @@ void ConvertYIQto8888( FxU8 *in, FxU32 *out, FxU32 Pixels, GuNccTable *ncc )
 
 void ConvertAYIQto8888( FxU16 *in, FxU32 *out, FxU32 Pixels, GuNccTable *ncc)
 {
-    FxU32  R;
-    FxU32  G;
-    FxU32  B;
+    FxI32  R;
+    FxI32  G;
+    FxI32  B;
 
     for ( FxU32 i = Pixels; i > 0; i-- )
     {

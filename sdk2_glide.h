@@ -61,7 +61,8 @@ typedef void (FX_CALL *GrProc)(void);
 #define MAX_MIPMAPS_PER_SST    1024
 
 #ifndef GLIDE_LIB
-#if defined(GLIDE3) && defined(GLIDE3_ALPHA)
+//#if defined(GLIDE3) && defined(GLIDE3_ALPHA)
+#if 0
 #define GR_FOG_TABLE_SIZE      128
 #else /* !(defined(GLIDE3) && defined(GLIDE3_ALPHA)) */
 #define GR_FOG_TABLE_SIZE      64
@@ -187,6 +188,7 @@ typedef FxI32 GrAspectRatio_t;
 #if defined(GLIDE3) && defined(GLIDE3_ALPHA)
 //#define GLIDE3_DEBUG
 #ifdef GLIDE3_DEBUG
+#error GLIDE3_DEBUG cannot be defined!
 #define GR_ASPECT_8x1 0x0       /* 8W x 1H */
 #define GR_ASPECT_4x1 0x1       /* 4W x 1H */
 #define GR_ASPECT_2x1 0x2       /* 2W x 1H */
@@ -483,6 +485,7 @@ typedef struct _GrState_s {
 #define GR_PARAM_Z        0x02
 #define GR_PARAM_W        0x03
 #define GR_PARAM_Q        0x04
+#define GR_PARAM_FOG_EXT  0x05
 
 #define GR_PARAM_A        0x10
 #define GR_PARAM_A0       GR_PARAM_A
@@ -937,8 +940,13 @@ grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c );
 /*
 ** buffer management
 */
+#ifndef GLIDE3_ALPHA
 FX_ENTRY void FX_CALL
 grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU16 depth );
+#else
+FX_ENTRY void FX_CALL
+grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU32 depth );
+#endif
 
 #ifndef GLIDE3_ALPHA
 FX_ENTRY int FX_CALL
@@ -1110,8 +1118,11 @@ grConstantColorValue( GrColor_t value );
 FX_ENTRY void FX_CALL 
 grConstantColorValue4( float a, float r, float g, float b );
 
-FX_ENTRY void FX_CALL 
-grDepthBiasLevel( FxI16 level );
+#ifndef GLIDE3
+FX_ENTRY void FX_CALL grDepthBiasLevel( FxI16 level );
+#else
+FX_ENTRY void FX_CALL grDepthBiasLevel( FxU32 level );
+#endif
 
 FX_ENTRY void FX_CALL 
 grDepthBufferFunction( GrCmpFnc_t function );
@@ -1149,7 +1160,7 @@ FX_ENTRY void FX_CALL
 grSplash(float x, float y, float width, float height, FxU32 frame);
 
 #ifdef GLIDE3
-FX_ENTRY FxBool FX_CALL 
+FX_ENTRY FxU32 FX_CALL 
 grGet( FxU32 pname, FxU32 plength, FxI32 *params );
 
 FX_ENTRY const char * FX_CALL 
@@ -1484,11 +1495,19 @@ FX_ENTRY void FX_CALL
 grAADrawPolygonVertexList(const int nverts, const GrVertex vlist[]);
 #endif /* !GLIDE3_ALPHA */
 
+#if defined(GLIDE3) && defined(GLIDE3_ALPHA)
+FX_ENTRY void FX_CALL
+grAADrawTriangle(
+                 const void *a, const void *b, const void *c,
+                 FxBool ab_antialias, FxBool bc_antialias, FxBool ca_antialias
+                 );
+#else
 FX_ENTRY void FX_CALL
 grAADrawTriangle(
                  const GrVertex *a, const GrVertex *b, const GrVertex *c,
                  FxBool ab_antialias, FxBool bc_antialias, FxBool ca_antialias
                  );
+#endif
 
 /*
 ** glide management functions

@@ -36,13 +36,13 @@ ifdef MSC
   LIBSUFFIX := .lib
   LIBPREFIX := 
 
-  CL_INCLUDE = 
+  CL_INCLUDE = -Iplatform\windows -I.
 
   # /DNDEBUG
-	CL_DEFS =  /D_WIN32 /DWIN32
+	CL_DEFS =  /D_WIN32 /DWIN32 /DCPPDLL /DHAVE_MMX
   
   ifdef DEBUG
-    DD_DEFS = /DDEBUG
+    DD_DEFS = /DDEBUG /DOGL_DEBUG
   else
     DD_DEFS = /DNDEBUG
   endif
@@ -52,18 +52,24 @@ ifdef MSC
     CXXFLAGS = /nologo $(MSC_RUNTIME) /O2 /Oi /Zc:inline $(CL_INCLUDE) $(DD_DEFS) $(CL_DEFS)
     LDFLAGS  = /nologo $(MSC_RUNTIME) /O2 /Oi /Zc:inline
   else
-    CFLAGS   = /nologo $(MSC_RUNTIME) /Z7 /Od $(CL_INCLUDE) $(DD_DEFS) $(CL_DEFS)
-    CXXFLAGS = /nologo $(MSC_RUNTIME) /Z7 /Od $(CL_INCLUDE) $(DD_DEFS) $(CL_DEFS)
+    CFLAGS   = /nologo $(MSC_RUNTIME) /Z7 /Od /GS $(CL_INCLUDE) $(DD_DEFS) $(CL_DEFS)
+    CXXFLAGS = /nologo $(MSC_RUNTIME) /Z7 /Od /GS $(CL_INCLUDE) $(DD_DEFS) $(CL_DEFS)
     LDFLAGS  = /nologo $(MSC_RUNTIME) /Z7 /Od
   endif
   
-  GLIDE_LIBS = kernel32.lib user32.lib gdi32.lib
+  GLIDE_LIBS = kernel32.lib user32.lib gdi32.lib opengl32.lib advapi32.lib
     
-  %.c.obj: %.c $(DEPS)
-		$(CC) $(CFLAGS) /Fo"$@" /c $<
+  %.c.g2.obj: %.c $(DEPS)
+		$(CC) $(CFLAGS) /DGLIDE2 /Fo"$@" /c $<
 		
-  %.cpp.obj: %.cpp $(DEPS)
-		$(CXX) $(CXXFLAGS) /Fo"$@" /c $<
+  %.cpp.g2.obj: %.cpp $(DEPS)
+		$(CXX) $(CXXFLAGS) /DGLIDE2 /Fo"$@" /c $<
+	
+  %.c.g3.obj: %.c $(DEPS)
+		$(CC) $(CFLAGS) /DGLIDE3 /DGLIDE3_ALPHA /Fo"$@" /c $<
+		
+  %.cpp.g3.obj: %.cpp $(DEPS)
+		$(CXX) $(CXXFLAGS) /DGLIDE3 /DGLIDE3_ALPHA /Fo"$@" /c $<
 	
   %.res: %.rc $(DEPS)
 		$(WINDRES) /nologo /fo $@ $<
@@ -72,7 +78,7 @@ ifdef MSC
   DLLFLAGS = /link /DLL /MACHINE:X86 /IMPLIB:$(@:dll=lib) /OUT:$@ /PDB:$(@:dll=pdb) /BASE:$(BASE_$@) /DEF:$(DEF_$@)
   
   DEF_glide2x.dll = Glide2x.def
-  DEF_glide3x.dll = Glide3x.def
+  DEF_glide3x.dll = Glide3x-msvc.def
 
   LIBSTATIC = LIB.EXE /nologo /OUT:$@ 
 	
@@ -88,7 +94,7 @@ else
   
   INCLUDE = -Iplatform\windows -I.
 
-  DEFS = -DWIN32 -DCPPDLL -DHAVE_MMX
+  DEFS = -DWIN32 -DCPPDLL -DHAVE_MMX -DNEW_FOG
   
   ifdef VERSION_BUILD
     DEFS  += -DOPENGLIDE9X_BUILD=$(VERSION_BUILD)
@@ -96,7 +102,7 @@ else
   endif
   
   ifdef DEBUG
-    DD_DEFS = -DDEBUG -DOGL_DEBUG
+    DD_DEFS = -DDEBUG -DOGL_DEBUG -DOGL_NOTDONE
   else
     DD_DEFS = -DNDEBUG
   endif
@@ -190,5 +196,8 @@ clean:
 	-$(RM) glide3x.res glide3x.dll
 	-$(RM) *.lib
 	-$(RM) *.a
+	-$(RM) *.pdb
+	-$(RM) *.ilk
+	-$(RM) *.exp
 	-cd pthread9x && $(MAKE) clean
 endif

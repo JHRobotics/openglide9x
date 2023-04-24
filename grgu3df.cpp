@@ -93,6 +93,10 @@ gu3dfLoad( const char *filename, Gu3dfInfo *data )
 #endif
 
     file3df = fopen( filename, "rb" );
+    if(file3df == NULL)
+    {
+    	return FXFALSE;
+    }
 
     fseek( file3df, jump, SEEK_SET );
 

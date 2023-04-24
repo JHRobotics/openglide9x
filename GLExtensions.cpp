@@ -378,7 +378,7 @@ void GLExtensions( void )
         else
         {
             glFogi( GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT );
-            glFogf( GL_FOG_MODE, GL_LINEAR );
+            glFogi( GL_FOG_MODE, GL_LINEAR );
             glFogf( GL_FOG_START, 0.0f );
             glFogf( GL_FOG_END, 1.0f );
         }

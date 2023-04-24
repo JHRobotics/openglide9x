@@ -15,6 +15,8 @@
 #include "Glextensions.h"
 #include "PGTexture.h"
 
+#include "OGLTables.h"
+
 //#include <algorithm>
 //using namespace std;
 
@@ -73,6 +75,20 @@ static float            hAspect,
 //**************************************************************
 // Functions definitions
 //**************************************************************
+static float OGLFogDistance(float w)
+{
+    if(w == 0.0f)
+    {
+    	w = 65535.0f;
+    }
+    
+    int i;
+    float oow = 1.0f/w;
+    
+    for (i = 0; ((i < GR_FOG_TABLE_SIZE-1) && (tableIndexToW[i] < oow)); i++);
+    
+    return Glide.FogTable[i] * D1OVER255;
+}
 
 // Initializes the render and allocates memory
 void RenderInitialize( void )
@@ -134,9 +150,15 @@ void RenderUpdateArrays( void )
 #endif
 }
 
+#ifndef OGL_DEBUG_HEAVY
 // Draw the current saved triangles
 void RenderDrawTriangles( void )
 {
+#else
+void RenderDrawTriangles_traced( const char *fn, const int line )
+{
+	GlideMsg("%s:%d: RenderDrawTriangles()\n", fn, line);
+#endif
     bool use_two_tex = false;
 
     if ( ! OGLRender.NumberOfTriangles )
@@ -337,8 +359,14 @@ void RenderDrawTriangles( void )
     OGLRender.NumberOfTriangles = 0;
 }
 
+#ifndef OGL_DEBUG_HEAVY
 void RenderAddTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c, bool unsnap )
 {
+#else
+void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVertex *c, bool unsnap, const char *fn, const int line)
+{
+	GlideMsg( "%s:%d: RenderAddTriangle( %f %f %f, %f %f %f, %f %f %f)\n", fn, line, a->x, a->y, a->oow, b->x, b->y, b->oow, c->x, c->y, c->oow);
+#endif
     pC = &OGLRender.TColor[ OGLRender.NumberOfTriangles ];
     pC2 = &OGLRender.TColor2[ OGLRender.NumberOfTriangles ];
     pV = &OGLRender.TVertex[ OGLRender.NumberOfTriangles ];
@@ -638,12 +666,18 @@ void RenderAddTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
     if( InternalConfig.FogEnable )
     {
         pF = &OGLRender.TFog[ OGLRender.NumberOfTriangles ];
-        if ( Glide.State.FogMode == GR_FOG_WITH_TABLE )
-//        if ( Glide.State.FogMode & GR_FOG_WITH_TABLE )
+//        if ( Glide.State.FogMode == GR_FOG_WITH_TABLE )
+        if ( Glide.State.FogMode & GR_FOG_WITH_TABLE )
         {
+#ifndef NEW_FOG
             pF->af = (float)OpenGL.FogTable[ (FxU16)(1.0f / a->oow) ] * D1OVER255;
             pF->bf = (float)OpenGL.FogTable[ (FxU16)(1.0f / b->oow) ] * D1OVER255;
             pF->cf = (float)OpenGL.FogTable[ (FxU16)(1.0f / c->oow) ] * D1OVER255;
+#else
+            pF->af = OGLFogDistance(a->oow);
+            pF->bf = OGLFogDistance(b->oow);
+            pF->cf = OGLFogDistance(c->oow);
+#endif
         }
         else
         {
@@ -1112,8 +1146,13 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
 
     if ( InternalConfig.FogEnable )
     {
+#ifndef NEW_FOG
         pF->af = (float)OpenGL.FogTable[ (FxU16)(1.0f / a->oow) ] * D1OVER255;
         pF->bf = (float)OpenGL.FogTable[ (FxU16)(1.0f / b->oow) ] * D1OVER255;
+#else
+        pF->af = OGLFogDistance(a->oow);
+        pF->bf = OGLFogDistance(b->oow);
+#endif
 
     #ifdef OGL_DEBUG
         DEBUG_MIN_MAX( pF->af, OGLRender.MaxF, OGLRender.MinF );
@@ -1499,7 +1538,11 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
 
     if( InternalConfig.FogEnable )
     {
+#ifndef NEW_FOG
         pF->af = (float)OpenGL.FogTable[ (FxU16)(1.0f / a->oow) ] * D1OVER255;
+#else
+        pF->af = OGLFogDistance(a->oow);
+#endif
 
     #ifdef OGL_DEBUG
         DEBUG_MIN_MAX( pF->af, OGLRender.MaxF, OGLRender.MinF );

@@ -24,8 +24,13 @@ void ConvertColorF( GrColor_t GlideColor, float &R, float &G, float &B, float &A
 //*************************************************
 //* Clear all the Buffers
 //*************************************************
+#ifndef GLIDE3_ALPHA
 FX_ENTRY void FX_CALL
 grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU16 depth )
+#else
+FX_ENTRY void FX_CALL
+grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU32 depth )
+#endif
 {
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "grBufferClear( %d, %d, %d )\n", color, alpha, depth );
@@ -97,6 +102,11 @@ grBufferSwap( int swap_interval )
     }
     OGLRender.FrameTriangles = 0;
 #endif
+    if (Glide.DstBuffer.Lock)
+    {
+        grLfbUnlock(Glide.DstBuffer.Type, Glide.DstBuffer.Buffer);
+        Glide.DstBuffer.Lock = true;
+    }
 
     SwapBuffers( );
 

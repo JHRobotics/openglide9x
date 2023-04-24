@@ -657,9 +657,9 @@ FxU32 PGTexture::MipMapMemRequired( GrLOD_t lod, GrAspectRatio_t aspectRatio, Gr
         return 2048;
 
 #ifndef GLIDE3_ALPHA
-    return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ aspectRatio ][ lod ];
+    return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ aspectRatio ][ lod ];
 #else
-    return nSquareLod[ format > GR_TEXFMT_RSVD1 ][ 3 - aspectRatio ][ 8 - lod ];
+    return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ 3 - aspectRatio ][ 8 - lod ];
 #endif
 }
 

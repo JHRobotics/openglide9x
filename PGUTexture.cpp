@@ -153,6 +153,40 @@ void PGUTexture::DownloadMipMap( GrMipMapId_t mmid, const void *src, const GuNcc
 
 void PGUTexture::DownloadMipMapLevel( GrMipMapId_t mmid, GrLOD_t lod, const void **src )
 {
+    if ( ( mmid >=0 ) && ( mmid < MAX_MM ) && ( mm_info[ mmid ].valid ) )
+    {
+        GrTexInfo info;
+        FxU32 size;
+
+
+        info.format      = mm_info[ mmid ].format;
+#ifndef GLIDE3
+        info.aspectRatio = mm_info[ mmid ].aspect_ratio;
+        info.largeLod    = mm_info[ mmid ].lod_max;
+        info.smallLod    = mm_info[ mmid ].lod_min;
+        
+        size = PGTexture::MipMapMemRequired( lod, info.aspectRatio, info.format );
+
+        grTexDownloadMipMapLevel( 0, mm_start[ mmid ], lod, lod, 
+                mm_info[ mmid ].aspect_ratio,
+                mm_info[ mmid ].format, 
+                mm_info[ mmid ].odd_even_mask, (void *)*src );
+#else
+        info.aspectRatioLog2 = mm_info[ mmid ].aspect_ratio_log2;
+        info.largeLodLog2    = mm_info[ mmid ].lod_max_log2;
+        info.smallLodLog2    = mm_info[ mmid ].lod_min_log2;
+        
+        size = PGTexture::MipMapMemRequired( lod, info.aspectRatioLog2, info.format );
+
+        grTexDownloadMipMapLevel( 0, mm_start[ mmid ], lod, lod, 
+                mm_info[ mmid ].aspect_ratio_log2,
+                mm_info[ mmid ].format, 
+                mm_info[ mmid ].odd_even_mask, (void *)*src );
+#endif
+
+
+        *src = (void *)(((intptr_t)*src) + size);
+    }
 }
 
 void PGUTexture::MemReset( void )

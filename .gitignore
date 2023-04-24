@@ -12,10 +12,18 @@
 *.exe
 *.res
 *.dll
+*.lib
 *.a
+
+# msc garbage
+*.pdb
+*.ilk
+*.exp
 
 # release and testing scripts
 *.bat
 
 # user defined configuration
 config.mk
+config.mk-gcc
+config.mk-msc

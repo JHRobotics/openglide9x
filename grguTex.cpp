@@ -67,6 +67,16 @@ grTexSource( GrChipID_t tmu,
 
     Glide.State.TexSource.StartAddress = startAddress;
     Glide.State.TexSource.EvenOdd = evenOdd;
+    Glide.State.TexSource.Info.format = info->format;
+#ifdef GLIDE3
+    Glide.State.TexSource.Info.aspectRatioLog2 = info->aspectRatioLog2;
+    Glide.State.TexSource.Info.largeLodLog2 = info->largeLodLog2;
+    Glide.State.TexSource.Info.smallLodLog2 = info->smallLodLog2;
+#else
+    Glide.State.TexSource.Info.aspectRatio = info->aspectRatio;
+    Glide.State.TexSource.Info.largeLod = info->largeLod;
+    Glide.State.TexSource.Info.smallLod = info->smallLod;
+#endif
 
     Textures->Source( startAddress, evenOdd, info );    
 }
@@ -129,8 +139,8 @@ grTexDownloadMipMapLevel( GrChipID_t        tmu,
         tmu, startAddress, thisLod, largeLod, aspectRatio, format, evenOdd, data );
 #endif
 
-    if ( ( tmu != GR_TMU0 ) || ( thisLod != largeLod ) )
-//    if ( tmu != GR_TMU0 )
+//    if ( ( tmu != GR_TMU0 ) || ( thisLod != largeLod ) )
+    if ( tmu != GR_TMU0 )
     {
         return;
     }
@@ -386,7 +396,8 @@ grTexDownloadTablePartial(
 
     RenderDrawTriangles( );
 
-    Textures->DownloadTable( type, (FxU32*)data, start, end + 1 - start );
+    //Textures->DownloadTable( type, (FxU32*)data, start, end + 1 - start );
+    Textures->DownloadTable( type, ((FxU32*)data) + start, start, end + 1 - start );
 }
 
 //*************************************************
@@ -424,6 +435,8 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
     GlideMsg( "grTexLodBiasValue( %d, %d )\n",
         tmu, bias );
 #endif
+
+    RenderDrawTriangles();
 
     if ( InternalConfig.EXT_texture_lod_bias )
     {

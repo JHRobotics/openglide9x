@@ -22,6 +22,7 @@
 //* download a fog table
 //* Fog is applied after color combining and before alpha blending.
 //*************************************************
+#ifndef NEW_FOG
 FX_ENTRY void FX_CALL
 grFogTable( const GrFog_t *ft )
 {
@@ -45,6 +46,20 @@ grFogTable( const GrFog_t *ft )
         }
     }
 }
+#else
+FX_ENTRY void FX_CALL
+grFogTable( const GrFog_t *ft )
+{
+#ifdef OGL_DONE
+    GlideMsg( "grFogTable( --- )\n" );
+#endif
+
+    if ( InternalConfig.FogEnable )
+    {
+        memcpy( Glide.FogTable, (GrFog_t *)ft, GR_FOG_TABLE_SIZE * sizeof( FxU8 ) );
+    }
+}
+#endif
 
 //*************************************************
 FX_ENTRY void FX_CALL
@@ -70,7 +85,7 @@ FX_ENTRY void FX_CALL
 grFogMode( GrFogMode_t mode )
 {
 #ifdef OGL_PARTDONE
-    GlideMsg( "grFogMode( %d )\n", mode );
+    GlideMsg( "grFogMode( 0x%X )\n", mode );
 #endif
 
     static GrFogMode_t  modeSource, 
@@ -113,6 +128,7 @@ grFogMode( GrFogMode_t mode )
 }
 
 //*************************************************
+#ifndef NEW_FOG
 FX_ENTRY void FX_CALL
 guFogGenerateExp( GrFog_t *fogtable, float density )
 {
@@ -144,8 +160,35 @@ guFogGenerateExp( GrFog_t *fogtable, float density )
         fogtable[ i ] = (GrFog_t) f;
     }
 }
+#else
+FX_ENTRY void FX_CALL
+guFogGenerateExp( GrFog_t *fogtable, float density )
+{
+  int   i;
+  float f;
+  float scale;
+  float dp;
+
+  dp = density * guFogTableIndexToW( GR_FOG_TABLE_SIZE - 1 );
+  scale = 1.0F / ( 1.0F - ( float ) exp( -dp ) );
+
+  for ( i = 0; i < GR_FOG_TABLE_SIZE; i++ ) {
+     dp = density * guFogTableIndexToW( i );
+     f = ( 1.0F - ( float ) exp( -dp ) ) * scale;
+
+     if ( f > 1.0F )
+        f = 1.0F;
+     else if ( f < 0.0F )
+        f = 0.0F;
+
+     f *= 255.0F;
+     fogtable[i] = ( GrFog_t ) f;
+  }
+}
+#endif
 
 //*************************************************
+#ifndef NEW_FOG
 FX_ENTRY void FX_CALL
 guFogGenerateExp2( GrFog_t *fogtable, float density )
 {
@@ -162,8 +205,36 @@ guFogGenerateExp2( GrFog_t *fogtable, float density )
         fogtable[ i ] = (FxU8) Temp;
     }
 }
+#else
+FX_ENTRY void FX_CALL
+guFogGenerateExp2( GrFog_t *fogtable, float density )
+{
+  int   i;
+  float f;
+  float scale;
+  float dp;
+
+  dp = density * guFogTableIndexToW( GR_FOG_TABLE_SIZE - 1 );
+  scale = 1.0F / ( 1.0F - ( float ) exp( -( dp * dp ) ) );
+
+  for ( i = 0; i < GR_FOG_TABLE_SIZE; i++ ) {
+     dp = density * guFogTableIndexToW( i );
+     f = ( 1.0F - ( float ) exp( -( dp * dp ) ) ) * scale;
+
+     if ( f > 1.0F )
+        f = 1.0F;
+     else if ( f < 0.0F )
+        f = 0.0F;
+
+     f *= 255.0F;
+     fogtable[i] = ( GrFog_t ) f;
+  }
+} /* guFogGenerateExp2 */
+
+#endif
 
 //*************************************************
+#ifndef NEW_FOG
 FX_ENTRY void FX_CALL
 guFogGenerateLinear( GrFog_t *fogtable,
                      float nearZ, float farZ )
@@ -202,6 +273,30 @@ guFogGenerateLinear( GrFog_t *fogtable,
         fogtable[ i ] = 255;
     }
 }
+#else
+FX_ENTRY void FX_CALL
+guFogGenerateLinear( GrFog_t *fogtable,
+                     float nearZ, float farZ )
+{
+   int i;
+   float world_w;
+   float f;
+
+  for ( i = 0; i < GR_FOG_TABLE_SIZE; i++ ) {
+    world_w = guFogTableIndexToW( i );
+    if ( world_w > 65535.0F )
+      world_w = 65535.0F;
+
+    f = ( world_w - nearZ ) / ( farZ - nearZ );
+    if ( f > 1.0F )
+      f = 1.0F;
+    else if ( f < 0.0F )
+      f = 0.0F;
+    f *= 255.0F;
+    fogtable[i] = ( GrFog_t ) f;
+  }
+} /* guFogGenerateLinear */
+#endif
 
 //*************************************************
 //* convert a fog table index to a floating point eye-space w value

@@ -1,0 +1,13 @@
+SPEED=1
+#DEBUG=1
+#LTO=1
+
+MSC=1
+
+# compiler names
+CXX = cl
+CC  = cl
+LD  = cl
+WINDRES = rc
+
+RM = rm -f

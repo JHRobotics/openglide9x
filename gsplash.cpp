@@ -781,6 +781,16 @@ grSplash (float x, float y, float w, float h, FxU32 _frame)
   } else {
     useTextures = 0;
   }
+  
+#ifdef GLIDE3
+  grReset(GR_VERTEX_PARAMETER);
+  grVertexLayout(GR_PARAM_XY,  GR_VERTEX_X_OFFSET << 2, GR_PARAM_ENABLE);
+  grVertexLayout(GR_PARAM_W,   GR_VERTEX_OOW_OFFSET << 2, GR_PARAM_ENABLE);
+  grVertexLayout(GR_PARAM_RGB, GR_VERTEX_R_OFFSET << 2, GR_PARAM_ENABLE);
+  grVertexLayout(GR_PARAM_A,   GR_VERTEX_A_OFFSET << 2, GR_PARAM_ENABLE);
+  grVertexLayout(GR_PARAM_ST0, GR_VERTEX_SOW_TMU0_OFFSET << 2, GR_PARAM_ENABLE);
+  grVertexLayout(GR_PARAM_Q0,  GR_VERTEX_OOW_TMU0_OFFSET << 2, GR_PARAM_ENABLE);
+#endif
 
   grAlphaTestFunction( GR_CMP_ALWAYS );
   grChromakeyMode( GR_CHROMAKEY_DISABLE );

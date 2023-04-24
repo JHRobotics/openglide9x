@@ -23,6 +23,10 @@ HCURSOR hDefault = NULL;
 
 HINSTANCE glideDLLInt = NULL;
 
+extern "C" {
+	BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved );
+}
+
 BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
 {
     int Priority;
@@ -37,14 +41,15 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         {
             return false;
         }
+        
         glideDLLInt = hinstDLL;
-        RegisterWinClass();
-                
+        RegisterOGLClass();
+           
         #ifdef __GNUC__
         __builtin_cpu_init();
         #endif
         
-        /* transparent cursort and copy of actual default cursor */
+        /* transparent cursor and copy of actual default cursor */
         hTransparent = LoadCursorA(glideDLLInt, MAKEINTRESOURCE(CURSOR_TRANSPARENT));
 				if(hTransparent) CopyCursor(hTransparent);
 				hDefault = LoadCursorA(NULL, IDC_ARROW);
