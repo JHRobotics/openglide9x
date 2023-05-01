@@ -37,9 +37,6 @@ static bool InterpretScreenResolution(GrScreenResolution_t eResolution, FxU32 &w
 
 static bool InterpretScreenRefresh(GrScreenRefresh_t eRefresh, GLuint &refresh)
 {
-    if ( eRefresh > GR_REFRESH_120Hz )
-        return false;
-
     static const GLuint windowRefresh[9] =
     {
          60, // GR_REFRESH_60Hz
@@ -52,6 +49,15 @@ static bool InterpretScreenRefresh(GrScreenRefresh_t eRefresh, GLuint &refresh)
          85, // GR_REFRESH_85Hz
         120  // GR_REFRESH_120Hz
     };
+ 
+    if(eRefresh == GR_REFRESH_NONE) /* TD5 */
+    {
+    	refresh = windowRefresh[0];
+    	return true;
+    }
+    
+    if ( eRefresh > GR_REFRESH_120Hz )
+        return false;
     
     refresh = windowRefresh[eRefresh];
     return true;
@@ -90,6 +96,7 @@ grGlideInit( void )
 #ifdef OGL_DONE
     GlideMsg( "grGlideInit( )\n" );
 #endif
+    SetGLThread();
 
     if ( OpenGL.GlideInit )
     {
@@ -115,7 +122,7 @@ grGlideInit( void )
 
     RenderInitialize( );
 
-    Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024;
+    Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024 * GLIDE_NUM_TMU;
 
     Textures = new PGTexture( Glide.TextureMemory );
     if ( Textures == NULL )
@@ -124,8 +131,44 @@ grGlideInit( void )
     }
 
     Glide.TexMemoryMaxPosition   = (FxU32)Glide.TextureMemory;
+    Glide.TexMemoryPerTMU        = UserConfig.TextureMemorySize * 1024 * 1024;
     InternalConfig.NoSplash      = UserConfig.NoSplash;
     InternalConfig.ShamelessPlug = UserConfig.ShamelessPlug;
+    
+    if(UserConfig.SSTType < 0)
+    {
+#ifndef GLIDE3
+			Glide.SSTType = GR_SSTTYPE_VOODOO;
+#else
+			Glide.SSTType = GR_SSTTYPE_Banshee;
+#endif
+  	}
+  	else
+  	{
+  		Glide.SSTType = UserConfig.SSTType;
+  	}
+  	
+  	switch(UserConfig.SSTType)
+  	{
+  		case GR_SSTTYPE_VOODOO:
+  			Glide.PixelfxVersion = 2;
+  			Glide.TexelfxVersion = 1;
+  			break;
+  		case GR_SSTTYPE_SST96:
+  		case GR_SSTTYPE_AT3D: /* this indicates different 3D accelerator */
+  			Glide.PixelfxVersion = 2;
+  			Glide.TexelfxVersion = 1;
+  			break;
+  		case GR_SSTTYPE_Voodoo2:
+  			Glide.PixelfxVersion = 2;
+  			Glide.TexelfxVersion = 2;
+  			break;
+  		case GR_SSTTYPE_Banshee:
+  			Glide.PixelfxVersion = 2;
+  			Glide.TexelfxVersion = 2;
+  			break;
+  	}
+    
 }
 
 //*************************************************
@@ -138,6 +181,8 @@ grGlideShutdown( void )
     {
         return;
     }
+    
+    SetGLThread();
 
     OpenGL.GlideInit = false;
 
@@ -167,6 +212,7 @@ grGlideSetState( const GrState *state )
 #ifdef OGL_PARTDONE
     GlideMsg( "grGlideSetState( --- )\n" );
 #endif
+    SetGLThread();
 
     GlideState StateTemp;
 
@@ -267,6 +313,8 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #endif
 
 {
+	  SetGLThread();
+	  
     if ( OpenGL.WinOpen )
     {
 #ifdef GLIDE3
@@ -489,6 +537,8 @@ FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
       #endif
     }
 
+    SetGLThread();
+
     OpenGL.WinOpen = false;
 
 #ifdef OGL_DEBUG
@@ -553,15 +603,26 @@ grSstQueryHardware( GrHwConfiguration *hwconfig )
 #endif
 
     hwconfig->num_sst = 1;
-    hwconfig->SSTs[0].type = GR_SSTTYPE_VOODOO;
-//  hwconfig->SSTs[0].type = GR_SSTTYPE_Voodoo2;
+    
+    hwconfig->SSTs[0].type = Glide.SSTType;
+    	
     hwconfig->SSTs[0].sstBoard.VoodooConfig.fbRam = UserConfig.FrameBufferMemorySize;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.fbiRev = 2;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.nTexelfx = 1;
-//  hwconfig->SSTs[0].sstBoard.VoodooConfig.nTexelfx = 2;
     hwconfig->SSTs[0].sstBoard.VoodooConfig.sliDetect = FXFALSE;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRev = 1;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRam = UserConfig.TextureMemorySize;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.fbiRev = Glide.PixelfxVersion;
+
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.nTexelfx = UserConfig.NumTMU;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRev = Glide.PixelfxVersion;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+
+#if GLIDE_NUM_TMU > 1
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[1].tmuRev = Glide.PixelfxVersion;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[1].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+#endif
+
+#if GLIDE_NUM_TMU > 2
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[2].tmuRev = Glide.PixelfxVersion;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[2].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+#endif
 
     return FXTRUE;
 }
@@ -611,9 +672,10 @@ grSstScreenWidth( void )
 FX_ENTRY void FX_CALL
 grSstOrigin( GrOriginLocation_t  origin )
 {
-#ifdef OGL_DONE
+//#ifdef OGL_DONE
     GlideMsg( "grSstSetOrigin( %d )\n", origin );
-#endif
+//#endif
+    SetGLThread();
 
     RenderDrawTriangles( );
 
@@ -775,6 +837,7 @@ grSstIdle( void )
 #ifdef OGL_DONE
     GlideMsg( "grSetIdle( )\n" );
 #endif
+    SetGLThread();
 
     RenderDrawTriangles( );
     glFlush( );

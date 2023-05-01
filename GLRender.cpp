@@ -77,10 +77,7 @@ static float            hAspect,
 //**************************************************************
 static float OGLFogDistance(float w)
 {
-    if(w == 0.0f)
-    {
-    	w = 65535.0f;
-    }
+	  w =  max(w, D1OVER65535);
     
     int i;
     float oow = 1.0f/w;
@@ -160,7 +157,7 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
 	GlideMsg("%s:%d: RenderDrawTriangles()\n", fn, line);
 #endif
     bool use_two_tex = false;
-
+    
     if ( ! OGLRender.NumberOfTriangles )
     {
         return;
@@ -365,7 +362,9 @@ void RenderAddTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
 #else
 void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVertex *c, bool unsnap, const char *fn, const int line)
 {
-	GlideMsg( "%s:%d: RenderAddTriangle( %f %f %f, %f %f %f, %f %f %f)\n", fn, line, a->x, a->y, a->oow, b->x, b->y, b->oow, c->x, c->y, c->oow);
+	GlideMsg( "%s:%d: RenderAddTriangle XY ( %f %f, %f %f, %f %f)\n", fn, line, a->x, a->y, b->x, b->y, c->x, c->y);
+	GlideMsg( "%s:%d: RenderAddTriangle QQ1( %f %f, %f %f, %f %f)\n", fn, line, a->oow, a->tmuvtx[0].oow, b->oow, b->tmuvtx[0].oow, c->oow, c->tmuvtx[0].oow);
+	GlideMsg( "%s:%d: RenderAddTriangle ST1( %f %f, %f %f, %f %f)\n", fn, line, a->tmuvtx[0].sow, a->tmuvtx[0].tow, b->tmuvtx[0].sow, b->tmuvtx[0].tow, c->tmuvtx[0].sow, c->tmuvtx[0].tow);
 #endif
     pC = &OGLRender.TColor[ OGLRender.NumberOfTriangles ];
     pC2 = &OGLRender.TColor2[ OGLRender.NumberOfTriangles ];
@@ -646,7 +645,8 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
 
     if ( OpenGL.Texture )
     {
-        maxoow = 1.0f / max( atmuoow, max( btmuoow, ctmuoow ) );
+    	  float maxw = max(max( atmuoow, max( btmuoow, ctmuoow ) ), D1OVER65535);
+        maxoow = 1.0f / maxw;
 
         Textures->GetAspect( &hAspect, &wAspect );
 

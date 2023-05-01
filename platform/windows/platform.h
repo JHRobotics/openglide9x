@@ -53,5 +53,7 @@ BOOL RegisterOGLClass();
 void Activate3DWindow();
 void Deactivate3DWindow();
 
+void SetGLThread();
+void ResetGLThread();
 
 #endif // WIN32

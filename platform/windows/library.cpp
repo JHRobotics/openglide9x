@@ -36,10 +36,10 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
     case DLL_THREAD_ATTACH:
         break;
 
-    case DLL_PROCESS_ATTACH:
+    case DLL_PROCESS_ATTACH:    	
         if ( !ClearAndGenerateLogFile( ) )
         {
-            return false;
+            return FALSE;
         }
         
         glideDLLInt = hinstDLL;
@@ -89,6 +89,7 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         break;
 
     case DLL_THREAD_DETACH:
+    	  ResetGLThread();
         break;
 
     case DLL_PROCESS_DETACH:

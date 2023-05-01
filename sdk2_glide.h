@@ -724,6 +724,9 @@ typedef int GrSstType;
 #define GR_SSTTYPE_SST96     1
 #define GR_SSTTYPE_AT3D      2
 #define GR_SSTTYPE_Voodoo2   3
+#define GR_SSTTYPE_Banshee   4
+#define GR_SSTTYPE_Voodoo3   5
+#define GR_SSTTYPE_Voodoo4   6
 
 typedef struct GrTMUConfig_St {
   int    tmuRev;                /* Rev of Texelfx chip */
@@ -1121,7 +1124,7 @@ grConstantColorValue4( float a, float r, float g, float b );
 #ifndef GLIDE3
 FX_ENTRY void FX_CALL grDepthBiasLevel( FxI16 level );
 #else
-FX_ENTRY void FX_CALL grDepthBiasLevel( FxU32 level );
+FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level );
 #endif
 
 FX_ENTRY void FX_CALL 

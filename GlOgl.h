@@ -189,6 +189,7 @@ struct GlideStruct
     // States and Constants
     FxU8                    FogTable[ GR_FOG_TABLE_SIZE + 1 ];
     FxU32                   TexMemoryMaxPosition;
+    FxU32                   TexMemoryPerTMU;
     bool                    CLocal;
     bool                    COther;
     bool                    ALocal;
@@ -199,6 +200,9 @@ struct GlideStruct
     GLuint                  LFBTexture;
     FxU32                   LFBTextureSize;
     int                     TextureMemory;
+    int                     SSTType;
+    int                     PixelfxVersion;
+    int                     TexelfxVersion;
 };
 
 struct OpenGLStruct
@@ -295,6 +299,7 @@ void GLErro( const char *Funcao );
 void ConvertColor4B( GrColor_t GlideColor, FxU32 &C );
 void ConvertColorB( GrColor_t GlideColor, FxU8 &R, FxU8 &G, FxU8 &B, FxU8 &A );
 void ConvertColorF( GrColor_t GlideColor, float &R, float &G, float &B, float &A );
+void ConvertColorF2( GrColor_t GlideColor, float &R, float &G, float &B, float &A );
 GrColor_t ConvertConstantColor( float R, float G, float B, float A );
 bool GenerateErrorFile( void );
 bool ClearAndGenerateLogFile( void );

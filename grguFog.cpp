@@ -68,7 +68,8 @@ grFogColorValue( GrColor_t fogcolor )
 #ifdef OGL_PARTDONE
     GlideMsg( "grFogColorValue( %x )\n", fogcolor );
 #endif
-
+    SetGLThread();
+    
     RenderDrawTriangles( );
 
     Glide.State.FogColorValue = fogcolor;
@@ -91,6 +92,8 @@ grFogMode( GrFogMode_t mode )
     static GrFogMode_t  modeSource, 
                         modeAdd;
     static GLfloat      ZeroColor[ 4 ] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+    SetGLThread();
 
     RenderDrawTriangles( );
 

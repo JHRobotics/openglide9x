@@ -36,6 +36,8 @@ grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU32 depth )
     GlideMsg( "grBufferClear( %d, %d, %d )\n", color, alpha, depth );
 #endif
 
+    SetGLThread();
+
     static GrColor_t    old_color = 0;
     static float        BR = 0.0f, 
                         BG = 0.0f, 
@@ -89,6 +91,8 @@ grBufferSwap( int swap_interval )
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "grBufferSwap( %d )\n", swap_interval );
 #endif
+
+    SetGLThread();
 
     RenderDrawTriangles( );
     glFlush( );
@@ -146,6 +150,7 @@ grRenderBuffer( GrBuffer_t dwBuffer )
 #ifdef OGL_DONE
     GlideMsg( "grRenderBuffer( %d )\n", dwBuffer );
 #endif
+    SetGLThread();
 
     RenderDrawTriangles( );
 

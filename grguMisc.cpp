@@ -13,7 +13,6 @@
 #include "GlOgl.h"
 #include "GLRender.h"
 
-#define GLIDE_MAX_NUM_TMU GLIDE_NUM_TMU
 //#define GLIDE_MAX_NUM_TMU 1
 
 //*************************************************
@@ -39,6 +38,7 @@ grCullMode( GrCullMode_t mode )
 #ifdef OGL_DONE
     GlideMsg( "grCullMode( %d )\n", mode );
 #endif
+    SetGLThread();
 
     RenderDrawTriangles( );
 
@@ -56,10 +56,12 @@ grCullMode( GrCullMode_t mode )
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
             glFrontFace( GL_CCW );
+            GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         else
         {
             glFrontFace( GL_CW );
+            GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         break;
 
@@ -68,10 +70,12 @@ grCullMode( GrCullMode_t mode )
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
             glFrontFace( GL_CW );
+            GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         else
         {
             glFrontFace( GL_CCW );
+            GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         break;
     }
@@ -90,6 +94,7 @@ grClipWindow( FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy )
 #ifdef OGL_PARTDONE
     GlideMsg( "grClipWindow( %d, %d, %d, %d )\n", minx, miny, maxx, maxy );
 #endif
+    SetGLThread();
 
     RenderDrawTriangles( );
 
@@ -156,6 +161,7 @@ grDisableAllEffects( void )
 #ifdef OGL_PARTDONE
     GlideMsg( "grDisableAllEffects( )\n" );
 #endif
+    SetGLThread();
 
     grAlphaBlendFunction( GR_BLEND_ONE, GR_BLEND_ZERO, GR_BLEND_ONE, GR_BLEND_ZERO );
     grAlphaTestFunction( GR_CMP_ALWAYS );
@@ -417,33 +423,28 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 	else
 	{
 		FxU32 argb = *((FxU32*)(mem+VXLPosition[GR_PARAM_POS_PARGB]));
-		
-		v->a = ((argb >> 24) & 0xFF) * 1.0f;
-		v->b = ((argb >> 16) & 0xFF) * 1.0f;
-		v->g = ((argb >>  8) & 0xFF) * 1.0f;
-		v->r =         (argb & 0xFF) * 1.0f;
+		ConvertColorF2(argb, v->r, v->g, v->b, v->a);
 	}
 	
 	VXLGetFloat(v->tmuvtx[0].oow, GR_PARAM_POS_Q0,  0);
 	VXLGetFloat(v->tmuvtx[0].sow, GR_PARAM_POS_ST0, 0);
 	VXLGetFloat(v->tmuvtx[0].tow, GR_PARAM_POS_ST0, 1);
 	
-#if GLIDE_MAX_NUM_TMU > 1
+#if GLIDE_NUM_TMU > 1
 	VXLGetFloat(v->tmuvtx[1].oow, GR_PARAM_POS_Q1,  0);
 	VXLGetFloat(v->tmuvtx[1].sow, GR_PARAM_POS_ST1, 0);
 	VXLGetFloat(v->tmuvtx[1].tow, GR_PARAM_POS_ST1, 1);
 #endif
 	
-#if GLIDE_MAX_NUM_TMU > 2
+#if GLIDE_NUM_TMU > 2
 	VXLGetFloat(v->tmuvtx[2].oow, GR_PARAM_POS_Q2,  0);
 	VXLGetFloat(v->tmuvtx[2].sow, GR_PARAM_POS_ST2, 0);
 	VXLGetFloat(v->tmuvtx[2].tow, GR_PARAM_POS_ST2, 1);
 #endif
-	
+
 	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
 	{
-		float q = 65535.0f;
-		//float z = 65535.0f;
+		float q = 65536.0f;
 		if(v->oow != 0)
 		{
 			q = 1.f / v->oow;
@@ -452,34 +453,28 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 		v->oow = q;
     v->x = v->x * q * Glide3ViewPort[2] * 0.5f + Glide3ViewPort[2] * 0.5f;
     v->y = v->y * q * Glide3ViewPort[3] * 0.5f + Glide3ViewPort[3] * 0.5f;
-    
-    /*if(v->ooz != 0)
-    {
-    	z =  1.f / v->ooz;
-    }*/
-            
-    //z = z * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
-    //v->ooz = 1.f / z;
     v->ooz = v->ooz * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
 
-		v->r *= 255.f;
-		v->g *= 255.f;
-		v->b *= 255.f;
-		v->a *= 255.f;
+		if(VXLGetOffset(GR_PARAM_POS_PARGB) == 0)
+		{
+			v->r *= 255.f;
+			v->g *= 255.f;
+			v->b *= 255.f;
+			v->a *= 255.f;
+		}
 		
 		//v->tmuvtx[0].oow = v->tmuvtx[0].oow * q * 256.0f;
 		v->tmuvtx[0].sow = v->tmuvtx[0].sow * q * 256.0f;
 		v->tmuvtx[0].tow = v->tmuvtx[0].tow * q * 256.0f;
 		
-#if GLIDE_MAX_NUM_TMU > 1
-
-		//v->tmuvtx[1].oow = v->tmuvtx[1].oow * q * 256.0f;
+#if GLIDE_NUM_TMU > 1
+		//v->tmuvtx[1].oow = v->tmuvtx[1].oow * 65535.f;
 		v->tmuvtx[1].sow = v->tmuvtx[1].sow * q * 256.0f;
 		v->tmuvtx[1].tow = v->tmuvtx[1].tow * q * 256.0f;
 #endif
 		
-#if GLIDE_MAX_NUM_TMU > 2
-		//v->tmuvtx[2].oow = v->tmuvtx[2].oow * q * 256.0f;
+#if GLIDE_NUM_TMU > 2
+		//v->tmuvtx[2].oow = v->tmuvtx[2].oow * 65535.f;
 		v->tmuvtx[2].sow = v->tmuvtx[2].sow * q * 256.0f;
 		v->tmuvtx[2].tow = v->tmuvtx[2].tow * q * 256.0f;
 #endif
@@ -497,10 +492,15 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 {
 	static GrVertex fan_pos;
 	static GrVertex fan_pos2;
-	static GrVertex strip_pos1;
-	static GrVertex strip_pos2;
+	static GrVertex strip_v[3];
 	static FxU32 contindex = 0;
 	GrVertex a, b, c;
+	
+#ifdef OGL_DONE
+	GlideMsg( "grDrawVertexArray(%d, %d, --)\n", mode, count );
+#endif
+
+  SetGLThread();
 	
 	switch(mode)
 	{
@@ -538,6 +538,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 				Glide3VertexUnpack(&b, pointers[i-1]);
 				Glide3VertexUnpack(&c, pointers[i]);
 				
+				//RenderAddTriangle(&a, &b, &c, true);
 				RenderAddTriangle(&a, &b, &c, true);
 			}
 
@@ -554,22 +555,34 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 			{
 				if(contindex == 0)
 				{
-					Glide3VertexUnpack(&strip_pos1, pointers[i]);
+					Glide3VertexUnpack(&strip_v[0], pointers[i]);
 				}
 				else if(contindex == 1)
 				{
-					Glide3VertexUnpack(&strip_pos2, pointers[i]);
+					Glide3VertexUnpack(&strip_v[1], pointers[i]);
 				}
 				else
 				{
-					Glide3VertexUnpack(&a, pointers[i]);
-					RenderAddTriangle(&strip_pos1, &strip_pos2, &a, true);
-					strip_pos1 = strip_pos2;
-					strip_pos2 = a;
+					Glide3VertexUnpack(&strip_v[contindex % 3], pointers[i]);
+					/*GrVertex *v1 = &strip_v[(contindex+1) % 3];
+					GrVertex *v2 = &strip_v[(contindex+2) % 3];
+					GrVertex *v3 = &strip_v[(contindex+0) % 3];
+					
+					switch(contindex % 2)
+					{
+						case 0: RenderAddTriangle(v1, v2, v3, true); break;
+						//case 1: RenderAddTriangle(v2, v1, v3, true); break;
+						case 1: RenderAddTriangle(v1, v3, v2, true); break;
+					}*/
+					RenderAddTriangle(
+						&strip_v[(contindex + 1) % 3],
+						&strip_v[(contindex + 2 + (contindex % 2)) % 3],
+						&strip_v[(contindex + 2 + ((contindex+1) % 2)) % 3],
+						true);
 				}
 			}
 
-			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
+			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER && contindex >= 2)
 			{
 				RenderDrawTriangles();
 				glFlush();
@@ -606,7 +619,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 				}
 			}
 
-			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
+			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER && contindex >= 2)
 			{
 				RenderDrawTriangles();
 				glFlush();
@@ -622,10 +635,15 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 
 	static GrVertex fan_pos;
 	static GrVertex fan_pos2;
-	static GrVertex strip_pos1;
-	static GrVertex strip_pos2;
+	static GrVertex strip_v[3];
 	static FxU32 contindex = 0;
 	GrVertex a, b, c;
+	
+#ifdef OGL_DONE
+	GlideMsg("grDrawVertexArrayContiguous(%d, %d, --, %u)\n", mode, count, stride);
+#endif
+	
+  SetGLThread();
 	
 	switch(mode)
 	{
@@ -679,18 +697,20 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 			{
 				if(contindex == 0)
 				{
-					Glide3VertexUnpack(&strip_pos1, PVERTEX(i));
+					Glide3VertexUnpack(&strip_v[0], PVERTEX(i));
 				}
 				else if(contindex == 1)
 				{
-					Glide3VertexUnpack(&strip_pos2, PVERTEX(i));
+					Glide3VertexUnpack(&strip_v[1], PVERTEX(i));
 				}
 				else
 				{
-					Glide3VertexUnpack(&a, PVERTEX(i));
-					RenderAddTriangle(&strip_pos1, &strip_pos2, &a, true);
-					strip_pos1 = strip_pos2;
-					strip_pos2 = a;
+					Glide3VertexUnpack(&strip_v[contindex % 3], PVERTEX(i));
+					RenderAddTriangle(
+						&strip_v[(contindex + 1) % 3],
+						&strip_v[(contindex + 2 + (contindex % 2)) % 3],
+						&strip_v[(contindex + 2 + ((contindex+1) % 2)) % 3],
+						true);
 				}
 			}
 
@@ -734,6 +754,8 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 
 FX_ENTRY void FX_CALL grFlush ( void )
 {
+  SetGLThread();
+    
 	RenderDrawTriangles();
 	glFlush();
 	glFinish();
@@ -741,6 +763,7 @@ FX_ENTRY void FX_CALL grFlush ( void )
 
 FX_ENTRY void FX_CALL grFinish ( void )
 {
+  SetGLThread();
 	grFlush();
 }
 
@@ -771,6 +794,58 @@ static inline FxU32 grGet_fill_num(FxU32 dstlen, FxI32 *dst, FxI32 n)
 FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 {
 	static const FxU32 rgba_bits[] = {5, 6, 5, 0};
+	static const FxU32 empty_fifo[] = {0, 0};
+	
+#ifdef OGL_DONE
+  const char *sname = "---unknown option---";
+  
+  #define ONAME(_e) case _e: sname = #_e; break;
+  
+  switch(pname)
+  {
+  	ONAME(GR_BITS_DEPTH)
+  	ONAME(GR_BITS_RGBA)
+  	ONAME(GR_BITS_GAMMA)
+  	ONAME(GR_FIFO_FULLNESS)
+  	ONAME(GR_FOG_TABLE_ENTRIES)
+  	ONAME(GR_GLIDE_STATE_SIZE)
+  	ONAME(GR_GLIDE_VERTEXLAYOUT_SIZE)
+  	ONAME(GR_LFB_PIXEL_PIPE)
+  	ONAME(GR_MAX_TEXTURE_SIZE)
+  	ONAME(GR_MAX_TEXTURE_ASPECT_RATIO)
+  	ONAME(GR_MEMORY_TMU)
+  	ONAME(GR_MEMORY_FB)
+  	ONAME(GR_MEMORY_UMA)
+  	ONAME(GR_NON_POWER_OF_TWO_TEXTURES)
+  	ONAME(GR_NUM_BOARDS)
+  	ONAME(GR_NUM_FB)
+  	ONAME(GR_NUM_SWAP_HISTORY_BUFFER)
+  	ONAME(GR_PENDING_BUFFERSWAPS)
+  	ONAME(GR_REVISION_FB)
+  	ONAME(GR_REVISION_TMU)
+  	ONAME(GR_STATS_LINES)
+  	ONAME(GR_STATS_PIXELS_AFUNC_FAIL)
+  	ONAME(GR_STATS_PIXELS_CHROMA_FAIL)
+  	ONAME(GR_STATS_PIXELS_DEPTHFUNC_FAIL)
+  	ONAME(GR_STATS_PIXELS_IN)
+  	ONAME(GR_STATS_PIXELS_OUT)
+  	ONAME(GR_STATS_POINTS)
+  	ONAME(GR_STATS_TRIANGLES_IN)
+  	ONAME(GR_STATS_TRIANGLES_OUT)
+  	ONAME(GR_SWAP_HISTORY)
+  	ONAME(GR_SUPPORTS_PASSTHRU)
+  	ONAME(GR_TEXTURE_ALIGN)
+  	ONAME(GR_VIDEO_POSITION)
+  	ONAME(GR_VIEWPORT)
+  	ONAME(GR_WDEPTH_MIN_MAX)
+  	ONAME(GR_ZDEPTH_MIN_MAX)
+  	ONAME(GR_NUM_TMU)
+  }
+  
+  #undef ONAME
+
+	GlideMsg("grGet(%d = %s, %d, ---)\n", pname, sname, plength);
+#endif
 	
 	switch(pname)
 	{
@@ -791,7 +866,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_FIFO_FULLNESS:
 			/*2 8
 			How full the FIFO is, as a percentage. The value is returned in two forms: 1.24 fixed point and a hardware-specific format. */
-			break;
+			return grGet_fill_buffer(params, plength, &empty_fifo[0], sizeof(empty_fifo));
 		case GR_FOG_TABLE_ENTRIES:
 			/*1 4
 			The number of entries in the hardware fog table.*/
@@ -800,7 +875,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*1 4
 			The number of entries in the hardware gamma table. Returns FXFALSE if it is not possible to manipulate gamma
 			(e.g. on a Macronix card, or in windowed mode).*/
-			return grGet_fill_num(plength, params, 256);
+			return grGet_fill_num(plength, params, 32); /* 32 * 4 */
 		case GR_GLIDE_STATE_SIZE:
 			/*1 4
 			Size of buffer, in bytes, needed to save Glide state. See grGlideGetState.*/
@@ -809,7 +884,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*1 4
 			Size of buffer, in bytes, needed to save the current vertex layout.
 			See grGlideGetVertexLayout.*/
-			return grGet_fill_num(plength, params, 256);
+			return grGet_fill_num(plength, params, 100); /* value from original driver, more than we need */
 		case GR_IS_BUSY:
 			/*1 4
 			Returns FXFALSE if idle, FXTRUE if busy.*/
@@ -818,7 +893,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*1 4
 			Returns FXTRUE if LFB writes can go through the 3D 
 			pixel pipe, FXFALSE otherwise.*/
-			return grGet_fill_num(plength, params, FXFALSE);
+			return grGet_fill_num(plength, params, FXTRUE);
 		case GR_MAX_TEXTURE_SIZE:
 			/* 1 4
 			The width of the largest texture supported on this configuration (e.g. Voodoo Graphics returns 256). */
@@ -834,7 +909,8 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_MEMORY_TMU:
 			/* 1 4
 			The total number of bytes per Texelfx chip if a non-UMA configuration is used, else FXFALSE. In non-UMA configurations, the total usable texture memory is GR_MEMORY_TMU * GR_NUM_TMU.*/
-			return grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU*UserConfig.TextureMemorySize*0x100000);
+			//return grGet_fill_num(plength, params, UserConfig.TextureMemorySize*0x100000);
+			return grGet_fill_num(plength, params, Glide.TexMemoryPerTMU*UserConfig.NumTMU);
 		case GR_MEMORY_UMA:
 			/* 1 4
 			The total number of bytes if a UMA configuration, else 0. */
@@ -856,11 +932,12 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_NUM_SWAP_HISTORY_BUFFER:
 			/* 1 4
 			Number of entries in the swap history buffer. Each entry is 4 bytes long. */
-			break;
+			return grGet_fill_num(plength, params, 0);
 		case GR_NUM_TMU:
 			/* 1 4
 			The number of Texelfx chips per Pixelfx chip. For integrated chips, the number of TMUs will be returned.*/
-			return grGet_fill_num(plength, params, GLIDE_MAX_NUM_TMU);
+			//return grGet_fill_num(plength, params, GLIDE_NUM_TMU);
+			return grGet_fill_num(plength, params, UserConfig.NumTMU);
 		case GR_PENDING_BUFFERSWAPS:
 			/* 1 4
 			The number of buffer swaps pending. */
@@ -868,11 +945,11 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_REVISION_FB:
 			/* 1 4
 			The revision of the Pixelfx chip(s). */
-			return grGet_fill_num(plength, params, 2);
+			return grGet_fill_num(plength, params, Glide.PixelfxVersion);
 		case GR_REVISION_TMU:
 			/* 1 4
 			The revision of the Texelfx chip(s). */
-			return grGet_fill_num(plength, params, 1);
+			return grGet_fill_num(plength, params, Glide.TexelfxVersion);
 		case GR_STATS_LINES:
 			/* 1 4
 			The number of lines drawn. */
@@ -920,11 +997,11 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_TEXTURE_ALIGN:
 			/*1 4
 			The alignment boundary for textures. For example, if textures must be 16-byte aligned, 0x10 would be returned.*/
-			return grGet_fill_num(plength, params, 256); /*256;*/
+			return grGet_fill_num(plength, params, 0x8);
 		case GR_VIDEO_POSITION:
 			/*2 8
 			Vertical and horizontal beam location. Vertical retrace is indicated by y == 0.*/
-			break;
+			return grGet_fill_buffer(params, plength, &empty_fifo[0], sizeof(empty_fifo));
 		case GR_VIEWPORT:
 			/*4 16
 			x, y, width, height.*/
@@ -956,16 +1033,29 @@ FX_ENTRY void FX_CALL grDepthRange( FxFloat n, FxFloat f )
 	Glide3DepthRange[1] = f;
 }
 
+const char *voodoo_names[] = {
+	[GR_SSTTYPE_VOODOO]     = "Voodoo Graphics",
+	[GR_SSTTYPE_SST96]      = "Voodoo Rush",
+	[GR_SSTTYPE_AT3D]       = "AT3D",
+	[GR_SSTTYPE_Voodoo2]    = "Voodoo^2",
+  [GR_SSTTYPE_Banshee]    = "Banshee"
+};
+
 const char *string_tables[] = {
 	" GETGAMMA ",
 	"Voodoo Graphics",
 	"Glide",
 	"3Dfx Interactive",
-	"3.0",
+	"3.04.00.0455", /* from last original Voodoo driver */
 };
 
 FX_ENTRY const char * FX_CALL grGetString( FxU32 pname )
 {
+	if(pname == GR_HARDWARE && Glide.SSTType >= GR_SSTTYPE_VOODOO && Glide.SSTType <= GR_SSTTYPE_Banshee)
+	{
+		return voodoo_names[Glide.SSTType];
+	}
+	
 	if(pname >= GR_EXTENSION && pname <= GR_VERSION)
 	{
 		return string_tables[pname - GR_EXTENSION];
@@ -974,17 +1064,42 @@ FX_ENTRY const char * FX_CALL grGetString( FxU32 pname )
 	return "";
 }
 
+static void dump_layout()
+{
+	GlideMsg("=== VertexLayout ===\n");
+	for(int i = 0; i < GR_PARAM_POS_SIZE; i++)
+	{
+		GlideMsg("%3d: %08X\n", i, VXLPosition[i]);
+	}
+	GlideMsg("====================\n");
+}
+
 FX_ENTRY void FX_CALL grGlideGetVertexLayout( void *layout )
 {
+#ifdef OGL_DONE
+	GlideMsg( "grGlideGetVertexLayout(%p)\n", layout);
+#endif
+	
 	memcpy(layout, VXLPosition, sizeof(VXLPosition));
 }
 
 FX_ENTRY void FX_CALL grGlideSetVertexLayout( const void *layout )
 {
+#ifdef OGL_DONE
+	GlideMsg( "grGlideSetVertexLayout(%p)\n", layout);
+#endif
+	
 	memcpy(VXLPosition, layout, sizeof(VXLPosition));
+	
+	//dump_layout();
 }
 
-FX_ENTRY void FX_CALL grLoadGammaTable( FxU32 nentries, FxU32 *red, FxU32 *green, FxU32 *blue){ }
+FX_ENTRY void FX_CALL grLoadGammaTable( FxU32 nentries, FxU32 *red, FxU32 *green, FxU32 *blue)
+{
+#ifdef OGL_NOTDONE
+	GlideMsg( "grLoadGammaTable(%u, ---, ---, ---) - not supported\n", nentries);
+#endif
+}
 
 typedef struct _GrResolution
 {
@@ -1038,6 +1153,7 @@ FX_ENTRY FxBool FX_CALL grReset( FxU32 what )
 		case GR_STATS_TRIANGLES:
 			return FXTRUE;
 		case GR_VERTEX_PARAMETER:
+			GlideMsg("grReset(GR_VERTEX_PARAMETER)\n");
 			VXLInit();
 			return FXTRUE;
 	}
@@ -1049,8 +1165,10 @@ typedef FxU32 GrContext_t;
 
 FX_ENTRY FxBool FX_CALL grSelectContext( GrContext_t context )
 {
-	if(context == 1) return FXTRUE; /* only one context */
+  SetGLThread();
 	
+	if(context == 1) return FXTRUE; /* only one context */
+		
 #ifdef OGL_NOTDONE
     GlideMsg( "grSelectContext - only 1 context, required: %d\n", context );
 #endif
@@ -1062,6 +1180,8 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 {
 	if(mode == GR_PARAM_ENABLE)
 	{
+		GlideMsg( "grVertexLayout(%u, %d, GR_PARAM_ENABLE)\n", param, offset );
+		
 		switch(param)
 		{
 			case GR_PARAM_XY:
@@ -1155,16 +1275,19 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 				break;
 			case GR_PARAM_FOG_EXT:
 				VXLPosition[GR_PARAM_POS_FOG_EXT] = 0;
+				break;
 		}
 	}
 	// Fog hack by kjliew
-	if(VXLPosition[GR_PARAM_POS_Q1] != 0 && VXLPosition[GR_PARAM_POS_Q1] == VXLPosition[GR_PARAM_POS_Q2])
+	/*if(VXLPosition[GR_PARAM_POS_Q1] != 0 && VXLPosition[GR_PARAM_POS_Q1] == VXLPosition[GR_PARAM_POS_Q2])
 	{
 		GrFog_t fto[GR_FOG_TABLE_SIZE];
 		guFogGenerateExp(fto, 1.f / guFogTableIndexToW(GR_FOG_TABLE_SIZE - 1));
 		grFogTable(fto);
 	}
+	*/
 }
+
 
 FX_ENTRY void FX_CALL grViewport( FxI32 x, FxI32 y, FxI32 width, FxI32 height )
 {
@@ -1175,11 +1298,16 @@ FX_ENTRY void FX_CALL grViewport( FxI32 x, FxI32 y, FxI32 width, FxI32 height )
 		Glide3ViewPort[2] = width;
 		Glide3ViewPort[3] = height;
 	}
+	
+	GlideMsg( "grViewport(%d, %d, %d, %d)\n", x, y, width, height);
+	
 }
 
 FX_ENTRY void FX_CALL guGammaCorrectionRGB( FxFloat red, FxFloat green, FxFloat blue )
 {
-	
+#ifdef OGL_NOTDONE
+    GlideMsg( "guGammaCorrectionRGB(---, ---, ---) - Not Supported\n");
+#endif
 }
 
 #endif /* GLIDE3 */

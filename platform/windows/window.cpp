@@ -14,11 +14,9 @@
 #endif
 
 #if !defined C_USE_SDL && defined WIN32
-/*
-#include <windows.h>
-#include <io.h>
-#include <math.h>
-*/
+
+#include <map>
+
 #define OEMRESOURCE
 
 #include "platform.h"
@@ -30,8 +28,8 @@
 #include <GL/gl.h>
 #include "GL/glext.h"
 
-static HDC   hDC;
-static HGLRC hRC;
+static HDC   hDC = NULL;
+static HGLRC hRC = NULL;
 static HWND  hWND;
 static HWND  hWND_parent;
 static bool  hWND_created;
@@ -46,6 +44,13 @@ static BOOL ramp_stored  = false;
 static BOOL mode_changed = false;
 
 static HHOOK win_hook = NULL;
+
+//CriticalSection rccs;
+static DWORD opengl_main_thread = 0;
+static HGLRC hRC2 = NULL;
+static DWORD hRC2_thread = 0;
+static HGLRC hRC3 = NULL;
+static DWORD hRC3_thread = 0;
 
 LRESULT CALLBACK DrawWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -117,17 +122,14 @@ BOOL setVSync()
 extern HCURSOR hTransparent;
 extern HCURSOR hDefault;
 
-void APIENTRY MessageCallback( GLenum source,
-                 GLenum type,
-                 GLuint id,
-                 GLenum severity,
-                 GLsizei length,
-                 const GLchar* message,
-                 const void* userParam )
+#ifdef OGL_DEBUG_HEAVY
+void APIENTRY MessageCallback( GLenum source, GLenum type, GLuint id, GLenum severity,
+                 GLsizei length, const GLchar* message, const void* userParam )
 {
 	GlideMsg( "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", 
 	(type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type, severity, message );
 }
+#endif
 
 bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
 {
@@ -136,41 +138,41 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     unsigned int            BitsPerPixel;
     HWND                    phwnd = (HWND) wnd;
     HWND                    hwnd = NULL;
-    
+        
     if( phwnd == NULL )
     {
       phwnd = GetActiveWindow();
     }
     
-    if(phwnd == NULL && !UserConfig.CreateWindow)
+    if(phwnd == NULL && UserConfig.CreateWindow == 0)
     {
     	MessageBox( NULL, "NULL window specified", "Error", MB_OK );
     	exit(1);
     }
-        
-    hWND_created = false;
     
-    if(phwnd == NULL)
+    if(phwnd == NULL || UserConfig.CreateWindow == 2)
     {
     	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
     		0, 0, width, height,
     		NULL, NULL, glideDLLInt, NULL);
-    	hWND_created = true;
     	
-			if(UserConfig.InitFullScreen)
-		  {
-		    mode_changed = SetScreenMode(width, height);
-		  }
+    	hWND_created = true;
     }
-    else if(phwnd != NULL)
+    else
+    {
+    	hwnd = phwnd;
+    	hWND_created = false;
+    }
+    
+    if(hwnd != NULL)
     {
 			if(UserConfig.InitFullScreen)
 		  {
-		      SetWindowLong(phwnd, GWL_STYLE,  WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
-		      MoveWindow(phwnd, 0, 0, width, height, false);
+		      SetWindowLong(hwnd, GWL_STYLE,  WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS);
+		      MoveWindow(hwnd, 0, 0, width, height, false);
 		      mode_changed = SetScreenMode(width, height);
 		  }
-		  else
+		  else if(hWND_created == false)
 		  {
 		     RECT rect;
 		     rect.left = 0;
@@ -178,23 +180,17 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
 		     rect.top = 0;
 		     rect.bottom = height;
 		     
-		     //LONG s = GetWindowLong(phwnd, GWL_STYLE) | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-		     LONG s = GetWindowLong(phwnd, GWL_STYLE);
+		     //LONG s = GetWindowLong(phwnd, GWL_STYLE) | WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
+		     LONG s = GetWindowLong(hwnd, GWL_STYLE) | WS_VISIBLE;
+		     SetWindowLong(hwnd, GWL_STYLE,  s);
 		
-		     AdjustWindowRectEx(&rect, s, GetMenu(phwnd) != NULL, GetWindowLong(phwnd, GWL_EXSTYLE));
-		     MoveWindow(phwnd, x, y, x + ( rect.right - rect.left ), y + ( rect.bottom - rect.top ), true);
+		     AdjustWindowRectEx(&rect, s, GetMenu(hwnd) != NULL, GetWindowLong(hwnd, GWL_EXSTYLE));
+		     MoveWindow(hwnd, x, y, x + ( rect.right - rect.left ), y + ( rect.bottom - rect.top ), true);
 		  }
-    	
-/*    	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide inner window", WS_CHILD | WS_VISIBLE,
-    		0, 0, width, height,
-    		phwnd, NULL, glideDLLInt, NULL);
-    	hWND_created = true;*/
-    	hwnd = phwnd;
     }
-    
-    if(hwnd == NULL)
+    else
     {
-        MessageBox( NULL, "NULL window specified", "Error", MB_OK );
+        MessageBox( NULL, "Windows cannot be created", "Error", MB_OK );
         exit( 1 );
     }
     
@@ -249,11 +245,19 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     }
 
     hRC = wglCreateContext( hDC );
-    wglMakeCurrent( hDC, hRC );
+    hRC2 = wglCreateContext( hDC );
+    hRC3 = wglCreateContext( hDC );
+    wglShareLists(hRC, hRC2);
+    wglShareLists(hRC, hRC3);
+    hRC2_thread = 0;
+    hRC3_thread = 0;
     
-    PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
+    wglMakeCurrent( hDC, hRC );
+    opengl_main_thread = GetCurrentThreadId();
     
 #ifdef OGL_DEBUG_HEAVY
+    PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
+    
     if(p_glDebugMessageCallback != NULL)
     {
     	glEnable(GL_DEBUG_OUTPUT);
@@ -281,6 +285,52 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     return true;
 }
 
+void ResetGLThread()
+{
+	DWORD tid = GetCurrentThreadId();
+	if(tid == hRC2_thread)
+	{
+		wglMakeCurrent(NULL, NULL);
+		hRC2_thread = 0;
+	}
+
+	if(tid == hRC3_thread)
+	{
+		wglMakeCurrent(NULL, NULL);
+		hRC3_thread = 0;
+	}
+}
+
+void SetGLThread()
+{
+	if(hDC == NULL || hRC == NULL)
+	{
+		return;
+	}
+	
+	DWORD tid = GetCurrentThreadId();
+
+	if(tid == opengl_main_thread) return;
+	if(tid == hRC2_thread) return;
+	if(tid == hRC3_thread) return;
+	
+	if(hRC2_thread == 0)
+	{
+		hRC2_thread = tid;
+		wglMakeCurrent(hDC, hRC2);
+		return;
+	}
+	
+	if(hRC2_thread == 0)
+	{
+		hRC3_thread = tid;
+		wglMakeCurrent(hDC, hRC3);
+		return;
+	}
+	
+	wglMakeCurrent(NULL, NULL);
+}
+
 void FinaliseOpenGLWindow( void)
 {
     if ( ramp_stored )
@@ -304,8 +354,19 @@ void FinaliseOpenGLWindow( void)
     }
 
     wglMakeCurrent( NULL, NULL );
+
+    hRC3_thread = 0;
+    hRC2_thread = 0;
+
+    wglDeleteContext( hRC3 );
+    wglDeleteContext( hRC2 );
     wglDeleteContext( hRC );
     ReleaseDC( hWND, hDC );
+
+    hRC3 = NULL;
+    hRC2 = NULL;
+    hRC = NULL;
+    hDC = NULL;
     
     if(hWND_created)
     {
