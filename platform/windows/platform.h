@@ -56,4 +56,6 @@ void Deactivate3DWindow();
 void SetGLThread();
 void ResetGLThread();
 
+int GetVRetrace();
+
 #endif // WIN32

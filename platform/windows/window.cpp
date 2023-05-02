@@ -113,7 +113,7 @@ BOOL setVSync()
 	wglSwapIntervalEXT = (GLIDE_PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
 	if(wglSwapIntervalEXT)
 	{
-		return wglSwapIntervalEXT(1);
+		return wglSwapIntervalEXT(UserConfig.SwapInterval);
 	}
 	
 	return FALSE;		
@@ -144,13 +144,13 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
       phwnd = GetActiveWindow();
     }
     
-    if(phwnd == NULL && UserConfig.CreateWindow == 0)
+    if(phwnd == NULL && UserConfig.CreateWindow == false)
     {
     	MessageBox( NULL, "NULL window specified", "Error", MB_OK );
     	exit(1);
     }
     
-    if(phwnd == NULL || UserConfig.CreateWindow == 2)
+    if(phwnd == NULL)
     {
     	hwnd = CreateWindowA(GLIDE_WND_CLASS_NAME, "Glide window", WS_POPUP | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
     		0, 0, width, height,
@@ -456,6 +456,28 @@ void Deactivate3DWindow()
 void SwapBuffers()
 {
   SwapBuffers(hDC);
+}
+
+/*
+ * JH: this doesn't get real vretrace period, only simulating it's time
+ * with system timer
+ */
+int GetVRetrace()
+{
+	DWORD period = 1000/60;
+	if(OpenGL.WaitSignal)
+	{
+		period = OpenGL.WaitSignal;
+	}
+	DWORD vtrace = (period * 0.9f + 0.5f);
+	
+	DWORD screen_time = GetTickCount() % period;
+	if(screen_time <= vtrace)
+	{
+		return 1;
+	}
+	
+	return 0;
 }
 
 #endif // !C_USE_SDL && WIN32

@@ -122,7 +122,7 @@ grGlideInit( void )
 
     RenderInitialize( );
 
-    Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024 * GLIDE_NUM_TMU;
+    Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024 * UserConfig.NumTMU;
 
     Textures = new PGTexture( Glide.TextureMemory );
     if ( Textures == NULL )
@@ -612,16 +612,16 @@ grSstQueryHardware( GrHwConfiguration *hwconfig )
 
     hwconfig->SSTs[0].sstBoard.VoodooConfig.nTexelfx = UserConfig.NumTMU;
     hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRev = Glide.PixelfxVersion;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[0].tmuRam = UserConfig.TextureMemorySize / UserConfig.NumTMU;
 
 #if GLIDE_NUM_TMU > 1
     hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[1].tmuRev = Glide.PixelfxVersion;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[1].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[1].tmuRam = UserConfig.TextureMemorySize / UserConfig.NumTMU;
 #endif
 
 #if GLIDE_NUM_TMU > 2
     hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[2].tmuRev = Glide.PixelfxVersion;
-    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[2].tmuRam = UserConfig.TextureMemorySize / GLIDE_NUM_TMU;
+    hwconfig->SSTs[0].sstBoard.VoodooConfig.tmuConfig[2].tmuRam = UserConfig.TextureMemorySize / UserConfig.NumTMU;
 #endif
 
     return FXTRUE;
@@ -739,16 +739,20 @@ grSstVideoLine( void )
 FX_ENTRY FxBool FX_CALL 
 grSstVRetraceOn( void )
 {
+#ifdef OGL_DONE
+    GlideMsg( "grSstVRetraceOn( )\n" );
+#endif
+
+#if 0
 	/* JH: result oscilating between FXTRUE/FXFALSE
 	 * for some stupid games which waiting for retrace and
 	 * and after for retrace ends. Forever.
 	 */
-#ifdef OGL_NOTDONE
-    GlideMsg( "grSstVRetraceOn( )\n" );
-#endif
 		Glide.State.VRetrace ^= 1;
-
-    return Glide.State.VRetrace;
+		return Glide.State.VRetrace;
+#endif
+		
+		return GetVRetrace();
 }
 
 //*************************************************
@@ -810,7 +814,7 @@ grSstStatus( void )
 //    FxU32 Status = 0x0FFFF43F;
     FxU32 Status = 0x0FFFF03F;
     
-    Glide.State.VRetrace ^= 1;
+    Glide.State.VRetrace = grSstVRetraceOn();
     
     // Vertical Retrace
     Status      |= ( ! Glide.State.VRetrace ) << 6;
