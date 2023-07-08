@@ -1,3 +1,4 @@
 [submodule "pthread9x"]
 	path = pthread9x
 	url = https://github.com/JHRobotics/pthread9x
+	branch = main
