@@ -92,9 +92,9 @@ else
   
   DLLFLAGS = -o $@ -shared -Wl,--dll,--out-implib,lib$(@:dll=a),--enable-stdcall-fixup,--image-base,$(BASE_$@)$(TUNE_LD)
   
-  INCLUDE = -Iplatform\windows -I.
+  INCLUDE = -Iplatform/windows -I. -Ipthread9x/include
 
-  DEFS = -DWIN32 -DCPPDLL -DHAVE_MMX -DNEW_FOG -DNO_TMU0_LIMIT
+  DEFS = -DWIN32 -DCPPDLL -DHAVE_MMX -DNEW_FOG -DNO_TMU0_LIMIT -DHAVE_CRTEX
   
   ifdef VERSION_BUILD
     DEFS  += -DOPENGLIDE9X_BUILD=$(VERSION_BUILD)

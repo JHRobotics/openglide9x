@@ -18,6 +18,12 @@
 
 #include "openglide9x.h"
 
+#ifdef HAVE_CRTEX
+extern "C" {
+# include <lockex.h>
+};
+#endif
+
 HCURSOR hTransparent = NULL;
 HCURSOR hDefault = NULL;
 
@@ -36,7 +42,10 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
     case DLL_THREAD_ATTACH:
         break;
 
-    case DLL_PROCESS_ATTACH:    	
+    case DLL_PROCESS_ATTACH:
+#ifdef HAVE_CRTEX
+    		crt_locks_init(0);
+#endif
         if ( !ClearAndGenerateLogFile( ) )
         {
             return FALSE;
