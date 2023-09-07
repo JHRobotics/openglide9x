@@ -214,7 +214,7 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     ZeroMemory( &pfd, sizeof( pfd ) );
     pfd.nSize        = sizeof( pfd );
     pfd.nVersion     = 1;
-    pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.dwFlags      = /*PFD_DRAW_TO_WINDOW |*/ PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.iPixelType   = PFD_TYPE_RGBA;
     pfd.cColorBits   = BitsPerPixel;
     pfd.cDepthBits   = BitsPerPixel;
