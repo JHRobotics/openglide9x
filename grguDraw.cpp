@@ -23,7 +23,7 @@ grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c )
 #ifdef OGL_CRITICAL
     GlideMsg( "grDrawTriangle( ---, ---, --- )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddTriangle( a, b, c, true );
 
@@ -32,6 +32,8 @@ grDrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c )
         RenderDrawTriangles( );
         glFlush( );
     }
+
+    LeaveGLThread();
 }
 
 #else
@@ -44,7 +46,7 @@ grDrawTriangle( const void *a1, const void *b1, const void *c1 )
 #endif
 		GrVertex a, b, c;
 
-    SetGLThread();
+    EnterGLThread();
 		
 		Glide3VertexUnpack(&a, a1);
 		Glide3VertexUnpack(&b, b1);
@@ -57,6 +59,8 @@ grDrawTriangle( const void *a1, const void *b1, const void *c1 )
         RenderDrawTriangles( );
         glFlush( );
     }
+
+    LeaveGLThread();
 }
 
 #endif
@@ -70,7 +74,7 @@ grDrawPlanarPolygonVertexList( int nVertices, const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg("grDrawPlanarPolygonVertexList( %d, --- )\n", nVertices );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nVertices; i++ )
     {
@@ -82,6 +86,8 @@ grDrawPlanarPolygonVertexList( int nVertices, const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -94,7 +100,7 @@ grDrawLine( const GrVertex *a, const GrVertex *b )
 #ifdef OGL_CRITICAL
     GlideMsg("grDrawLine( ---, --- )\n");
 #endif
-    SetGLThread();
+    EnterGLThread();
     
    /*
     * RenderAddLine actually renders the line, so
@@ -103,6 +109,8 @@ grDrawLine( const GrVertex *a, const GrVertex *b )
     */
     RenderDrawTriangles( );
     RenderAddLine( a, b, true );
+
+    LeaveGLThread();
 }
 #else
 
@@ -113,7 +121,7 @@ grDrawLine( const void *a1, const void *b1 )
     GlideMsg("grDrawLine( ---, --- )\n");
 #endif
     GrVertex a, b;
-    SetGLThread();
+    EnterGLThread();
     
 		Glide3VertexUnpack(&a, a1);
 		Glide3VertexUnpack(&b, b1);
@@ -125,6 +133,8 @@ grDrawLine( const void *a1, const void *b1 )
     */
     RenderDrawTriangles( );
     RenderAddLine( &a, &b, true );
+
+    LeaveGLThread();
 }
 #endif
 
@@ -138,9 +148,11 @@ grDrawPoint( const GrVertex *a )
 #ifdef OGL_CRITICAL
     GlideMsg( "grDrawPoint( --- )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
     RenderAddPoint( a, true );
+
+    LeaveGLThread();
 }
 #else
 FX_ENTRY void FX_CALL
@@ -151,11 +163,13 @@ grDrawPoint( const void *a1 )
 #endif
 	GrVertex a;
 
-  SetGLThread();	
+  EnterGLThread();	
 
 	Glide3VertexUnpack(&a, a1);
 
   RenderAddPoint( &a, true );
+
+	LeaveGLThread();
 }
 #endif
 
@@ -169,7 +183,7 @@ grDrawPolygon( int nverts, const int ilist[], const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "grDrawPolygon( %d, ---, --- )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nverts; i++ )
     {
@@ -184,6 +198,7 @@ grDrawPolygon( int nverts, const int ilist[], const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -195,7 +210,7 @@ grDrawPlanarPolygon( int nverts, const int ilist[], const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "grDrawPlanarPolygon( %d, ---, --- )\n", nverts );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nverts; i++ )
     {
@@ -210,6 +225,7 @@ grDrawPlanarPolygon( int nverts, const int ilist[], const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -221,7 +237,7 @@ grDrawPolygonVertexList( int nVertices, const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "grDrawPolygonVertexList( %d, --- )\n", nVertices );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nVertices; i++ )
     {
@@ -236,6 +252,7 @@ grDrawPolygonVertexList( int nVertices, const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -245,7 +262,7 @@ guAADrawTriangleWithClip( const GrVertex *a, const GrVertex *b,
 #ifdef OGL_CRITICAL
     GlideMsg("guAADrawTriangleWithClip( ---, ---, --- )\n");
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddTriangle( a, b, c, false );
 
@@ -254,6 +271,7 @@ guAADrawTriangleWithClip( const GrVertex *a, const GrVertex *b,
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -264,7 +282,7 @@ guDrawTriangleWithClip( const GrVertex *a,
 #ifdef OGL_CRITICAL
     GlideMsg("guDrawTriangleWithClip( ---, ---, --- )\n");
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddTriangle( a, b, c, false );
 
@@ -273,6 +291,8 @@ guDrawTriangleWithClip( const GrVertex *a,
         RenderDrawTriangles( );
         glFlush( );
     }
+    
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -281,7 +301,7 @@ guDrawPolygonVertexListWithClip( int nverts, const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "guDrawPolygonVertexListWithClip( %d, --- )\n", nverts );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nverts; i++ )
     {
@@ -296,6 +316,7 @@ guDrawPolygonVertexListWithClip( int nverts, const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -304,9 +325,11 @@ grAADrawLine( const GrVertex *a, const GrVertex *b )
 #ifdef OGL_CRITICAL
     GlideMsg( "grAADrawLine( ---, --- )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddLine( a, b, true );
+
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -315,9 +338,11 @@ grAADrawPoint(const GrVertex *a )
 #ifdef OGL_CRITICAL
     GlideMsg("grAADrawPoint( --- )\n");
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddPoint( a, true );
+
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -326,7 +351,7 @@ grAADrawPolygon( const int nverts, const int ilist[], const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "grAADrawPolygon( %d, ---, --- )\n", nverts );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nverts; i++ )
     {
@@ -341,6 +366,7 @@ grAADrawPolygon( const int nverts, const int ilist[], const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -349,7 +375,7 @@ grAADrawPolygonVertexList( const int nverts, const GrVertex vlist[] )
 #ifdef OGL_CRITICAL
     GlideMsg( "grAADrawPolygonVertexList( %d, --- )\n", nverts );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     for ( int i = 2; i < nverts; i++ )
     {
@@ -364,6 +390,7 @@ grAADrawPolygonVertexList( const int nverts, const GrVertex vlist[] )
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 
 #ifndef GLIDE3
@@ -375,7 +402,7 @@ grAADrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
     GlideMsg("grAADrawTriangle( ---, ---, ---, %d, %d, %d )\n",
         ab_antialias, bc_antialias, ca_antialias );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderAddTriangle( a, b, c, true );
 
@@ -384,6 +411,7 @@ grAADrawTriangle( const GrVertex *a, const GrVertex *b, const GrVertex *c,
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 #else
 FX_ENTRY void FX_CALL
@@ -396,7 +424,7 @@ grAADrawTriangle( const void *a1, const void *b1, const void *c1,
 #endif
 		GrVertex a, b, c;
 		
-    SetGLThread();
+    EnterGLThread();
 		
 		Glide3VertexUnpack(&a, a1);
 		Glide3VertexUnpack(&b, b1);
@@ -409,5 +437,6 @@ grAADrawTriangle( const void *a1, const void *b1, const void *c1,
         RenderDrawTriangles( );
         glFlush( );
     }
+    LeaveGLThread();
 }
 #endif

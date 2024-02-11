@@ -81,6 +81,16 @@
 #define ZBUFFERNEAR              0.0f
 #define ZBUFFERFAR              -1.0f
 
+#define MAX_NUM_SST                  4
+#define MAX_NUM_CONTEXTS             16
+
+#define VOODOO_GAMMA_TABLE_SIZE      256
+#define SST1_BITS_DEPTH              16
+#define SST1_ZDEPTHVALUE_NEAREST     0xFFFF
+#define SST1_ZDEPTHVALUE_FARTHEST    0x0000
+#define SST1_WDEPTHVALUE_NEAREST     0x0000
+#define SST1_WDEPTHVALUE_FARTHEST    0xFFFF
+
 // Class declarations
 
 typedef void (*GLIDEERRORFUNCTION)( const char *string, FxBool fatal );
@@ -163,7 +173,7 @@ struct GlideState
     FxBool                  TextureCombineRGBInvert;
     FxBool                  TextureCombineAInvert;
     GrOriginLocation_t      OriginInformation;
-    TexSourceStruct         TexSource;
+    TexSourceStruct         TexSource[GLIDE_NUM_TMU];
     GrAlphaBlendFnc_t       AlphaBlendRgbSf;
     GrAlphaBlendFnc_t       AlphaBlendRgbDf;
     GrAlphaBlendFnc_t       AlphaBlendAlphaSf;

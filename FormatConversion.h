@@ -19,5 +19,7 @@ void ConvertAP88to8888( FxU16 *Buffer1, FxU32 *Buffer2, FxU32 Pixels, FxU32 *pal
 void ConvertYIQto8888( FxU8 *in, FxU32 *out, FxU32 Pixels, GuNccTable *ncc );
 void ConvertAYIQto8888( FxU16 *in, FxU32 *out, FxU32 Pixels, GuNccTable *ncc );
 void SplitAP88( FxU16 *ap88, FxU8 *index, FxU8 *alpha, FxU32 pixels );
+void Convert1555to8888( FxU16 *Buffer1, FxU32 *Buffer2, int Pixels );
+void Convert4444to8888( FxU16 *Buffer1, FxU32 *Buffer2, int Pixels );
 
 #endif

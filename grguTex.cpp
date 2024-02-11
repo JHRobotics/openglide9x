@@ -72,35 +72,48 @@ grTexSource( GrChipID_t tmu,
 #ifdef OGL_DONE
     GlideMsg( "grTexSource( %d, %d, %d, --- )\n", tmu, startAddress, evenOdd );
 #endif
-    SetGLThread();
+    EnterGLThread();
+    
+    // FIXME: TMU range
 
 #ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 #endif
 
     RenderDrawTriangles( );
+    
+		if(!(startAddress >= grTexMinAddress(tmu) && startAddress < grTexMaxAddress(tmu)))
+		{
+    	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	LeaveGLThread();
+			return;
+		}
 
-    Glide.State.TexSource.StartAddress = startAddress;
-    Glide.State.TexSource.EvenOdd = evenOdd;
-    Glide.State.TexSource.Info.format = info->format;
+    Glide.State.TexSource[tmu].StartAddress = startAddress;
+    Glide.State.TexSource[tmu].EvenOdd = evenOdd;
+    Glide.State.TexSource[tmu].Info.format = info->format;
 #ifdef GLIDE3
-    Glide.State.TexSource.Info.aspectRatioLog2 = info->aspectRatioLog2;
-    Glide.State.TexSource.Info.largeLodLog2 = info->largeLodLog2;
-    Glide.State.TexSource.Info.smallLodLog2 = info->smallLodLog2;
+    Glide.State.TexSource[tmu].Info.aspectRatioLog2 = info->aspectRatioLog2;
+    Glide.State.TexSource[tmu].Info.largeLodLog2 = info->largeLodLog2;
+    Glide.State.TexSource[tmu].Info.smallLodLog2 = info->smallLodLog2;
 #else
-    Glide.State.TexSource.Info.aspectRatio = info->aspectRatio;
-    Glide.State.TexSource.Info.largeLod = info->largeLod;
-    Glide.State.TexSource.Info.smallLod = info->smallLod;
+    Glide.State.TexSource[tmu].Info.aspectRatio = info->aspectRatio;
+    Glide.State.TexSource[tmu].Info.largeLod = info->largeLod;
+    Glide.State.TexSource[tmu].Info.smallLod = info->smallLod;
 #endif
 
 #ifdef NO_TMU0_LIMIT
 
 #endif
 
-    Textures->Source( startAddress, evenOdd, info );    
+    Textures->Source(tmu, startAddress, evenOdd, info );    
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -131,11 +144,13 @@ grTexDownloadMipMap( GrChipID_t tmu,
     GlideMsg( "grTexDownloadMipMap( %d, %u, %u, --- )\n", tmu, 
         startAddress, evenOdd );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 #ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 #endif
@@ -147,7 +162,16 @@ grTexDownloadMipMap( GrChipID_t tmu,
     info->smallLodLog2 = info->largeLodLog2;
 #endif
 
-    Textures->DownloadMipMap( startAddress, evenOdd, info );
+		if(!(startAddress >= grTexMinAddress(tmu) && startAddress < grTexMaxAddress(tmu)))
+		{
+    	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	LeaveGLThread();
+			return;
+		}
+
+    Textures->DownloadMipMap( tmu, startAddress, evenOdd, info );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -167,12 +191,14 @@ grTexDownloadMipMapLevel( GrChipID_t        tmu,
     GlideMsg( "grTexDownloadMipMapLevel( %d, %lu, %d, %d, %d, %d, %d, %lu )\n",
         tmu, startAddress, thisLod, largeLod, aspectRatio, format, evenOdd, data );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 #ifndef NO_TMU0_LIMIT
 //    if ( ( tmu != GR_TMU0 ) || ( thisLod != largeLod ) )
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 #endif
@@ -190,7 +216,16 @@ grTexDownloadMipMapLevel( GrChipID_t        tmu,
     info.format         = format;
     info.data           = data;
 
-    Textures->DownloadMipMap( startAddress, evenOdd, &info );
+		if(!(startAddress >= grTexMinAddress(tmu) && startAddress < grTexMaxAddress(tmu)))
+		{
+    	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	LeaveGLThread();
+			return;
+		}
+
+    Textures->DownloadMipMap( tmu, startAddress, evenOdd, &info );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -212,11 +247,13 @@ grTexDownloadMipMapLevelPartial( GrChipID_t        tmu,
     GlideMsg( "grTexDownloadMipMapLevelPartial( %d, %lu, %d, %d, %d, %d, %d, ---, %d, %d )\n",
         tmu, startAddress, thisLod, largeLod, aspectRatio, format, evenOdd, start, end );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 #ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
 		}
 #endif
@@ -234,7 +271,16 @@ grTexDownloadMipMapLevelPartial( GrChipID_t        tmu,
     info.format      = format;
     info.data        = data;
 
-    Textures->DownloadMipMapPartial( startAddress, evenOdd, &info, start, end );
+		if(!(startAddress >= grTexMinAddress(tmu) && startAddress < grTexMaxAddress(tmu)))
+		{
+    	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	LeaveGLThread();
+			return;
+		}
+		
+    Textures->DownloadMipMapPartial( tmu, startAddress, evenOdd, &info, start, end );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -249,11 +295,13 @@ grTexClampMode( GrChipID_t tmu,
     GlideMsg( "grTexClampMode( %d, %d, %d )\n",
         tmu, s_clampmode, t_clampmode );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 //#ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 //#endif
@@ -277,6 +325,7 @@ grTexClampMode( GrChipID_t tmu,
 #ifdef OPENGL_DEBUG
     GLErro( "grTexClampMode" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -291,11 +340,13 @@ grTexFilterMode( GrChipID_t tmu,
     GlideMsg( "grTexFilterMode( %d, %d, %d )\n",
         tmu, minfilter_mode, magfilter_mode );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
 //#ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 //#endif
@@ -353,6 +404,7 @@ grTexFilterMode( GrChipID_t tmu,
 #ifdef OPENGL_DEBUG
     GLErro( "grTexFilterMode" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -367,11 +419,13 @@ grTexMipMapMode( GrChipID_t     tmu,
     GlideMsg( "grTexMipMapMode( %d, %d, %d )\n",
         tmu, mode, lodBlend );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 //#ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 //#endif
@@ -386,6 +440,7 @@ grTexMipMapMode( GrChipID_t     tmu,
 #ifdef OPENGL_DEBUG
     GLErro( "grTexMipMapMode" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -399,7 +454,7 @@ grTexCalcMemRequired( GrLOD_t lodmin, GrLOD_t lodmax,
     GlideMsg( "grTexCalcMemRequired( %d, %d, %d, %d )\n",
         lodmin, lodmax, aspect, fmt );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     static GrTexInfo texInfo;
 #ifndef GLIDE3_ALPHA
@@ -413,7 +468,11 @@ grTexCalcMemRequired( GrLOD_t lodmin, GrLOD_t lodmax,
 #endif
     texInfo.format      = fmt;
 
-    return Textures->TextureMemRequired( 0, &texInfo );
+    FxU32 s = Textures->TextureMemRequired( 0, &texInfo );
+
+    LeaveGLThread();
+    
+    return s;
 }
 
 //*************************************************
@@ -439,6 +498,8 @@ grTexDownloadTablePartial(
 # ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 # endif
@@ -448,12 +509,14 @@ grTexDownloadTablePartial(
     GlideMsg( "grTexDownloadTablePartial(%d, ---, %d, %d )\n", type, start, end );
 # endif
 #endif
-    SetGLThread();
+    EnterGLThread();
     
     RenderDrawTriangles( );
 
     //Textures->DownloadTable( type, (FxU32*)data, start, end + 1 - start );
     Textures->DownloadTable( type, ((FxU32*)data) + start, start, end + 1 - start );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -475,6 +538,8 @@ grTexDownloadTable(
 # ifndef NO_TMU0_LIMIT
     if ( tmu != GR_TMU0 )
     {
+    	  GlideMsg("%s: tmu(%d) != GR_TMU0", __FUNCTION__, tmu);
+    	  LeaveGLThread();
         return;
     }
 # endif
@@ -483,11 +548,13 @@ grTexDownloadTable(
     GlideMsg( "grTexDownloadTable( %d, --- )\n", type );
 # endif
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
     Textures->DownloadTable( type, (FxU32*)data, 0, 256 );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -498,7 +565,7 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
     GlideMsg( "grTexLodBiasValue( %d, %d )\n",
         tmu, bias );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles();
 
@@ -506,6 +573,8 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
     {
         glTexEnvf( GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, bias );
     }
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -738,7 +807,7 @@ grTexNCCTable(
 #ifdef OGL_DONE
     GlideMsg( "grTexNCCTable( -, %u )\n", NCCTable );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
 //    if ( tmu != GR_TMU0 )
@@ -746,7 +815,9 @@ grTexNCCTable(
 //        return;
 //    }
 
-	Textures->NCCTable( NCCTable );
+	  Textures->NCCTable( NCCTable );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -798,7 +869,7 @@ grTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "grTexCombineFunction( %d, %d )\n", tmu, func );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
 //    if ( tmu != GR_TMU0 )
@@ -849,6 +920,8 @@ grTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
 //  case GR_TEXTURECOMBINE_TRILINEAR_EVEN:  // blend (Cother, Clocal) LOD blended textures with even levels on selected TMU
 //      break;
     }
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -877,7 +950,7 @@ guTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "guTexCombineFunction( %d, %d )\n", tmu, func );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
 //    if ( tmu != GR_TMU0 )
@@ -928,6 +1001,8 @@ guTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
 //  case GR_TEXTURECOMBINE_TRILINEAR_EVEN:  // blend (Cother, Clocal) LOD blended textures with even levels on selected TMU
 //      break;
     }
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -937,7 +1012,7 @@ guTexGetCurrentMipMap( GrChipID_t tmu )
 #ifdef OGL_DONE
     GlideMsg( "guTexGetCurrentMipMap( %d ) = %d\n", tmu, UTextures.GetCurrentMipMap( tmu ) );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
 //    if ( tmu != GR_TMU0 )
@@ -945,7 +1020,11 @@ guTexGetCurrentMipMap( GrChipID_t tmu )
 //        return GR_NULL_MIPMAP_HANDLE;
 //    }
 
-    return UTextures.GetCurrentMipMap( tmu );
+    GrMipMapId_t id = UTextures.GetCurrentMipMap( tmu );
+    
+    LeaveGLThread();
+    
+    return id;
 }
 
 //*************************************************
@@ -966,11 +1045,15 @@ guTexChangeAttributes( GrMipMapId_t mmid,
         mmid, width, height, fmt, mm_mode, smallest_lod, largest_lod, aspect,
         s_clamp_mode, t_clamp_mode, minFilterMode, magFilterMode );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
-    return UTextures.ChangeAttributes( mmid, width, height, fmt, mm_mode,
+    FxBool b = UTextures.ChangeAttributes( mmid, width, height, fmt, mm_mode,
         smallest_lod, largest_lod, aspect, s_clamp_mode, t_clamp_mode, 
         minFilterMode, magFilterMode );
+        
+    LeaveGLThread();
+    
+    return b;
 }
 
 //*************************************************
@@ -981,9 +1064,13 @@ guTexGetMipMapInfo( GrMipMapId_t mmid )
 #ifdef OGL_DONE
     GlideMsg( "guTexGetMipMapInfo( ) = 0x%p\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
-    return UTextures.GetMipMapInfo( mmid );
+    GrMipMapInfo *info = UTextures.GetMipMapInfo( mmid );
+    
+    LeaveGLThread();
+    
+    return info;
 }
 #endif
 //*************************************************
@@ -993,10 +1080,12 @@ guTexMemReset( void )
 #ifdef OGL_PARTDONE
     GlideMsg( "guTexMemReset( )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     UTextures.MemReset( );
     Textures->Clear( );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -1006,9 +1095,11 @@ guTexDownloadMipMapLevel( GrMipMapId_t mmid, GrLOD_t lod, const void **src )
 #ifdef OGL_DONE
     GlideMsg( "guTexDownloadMipMapLevel( %d, %d, 0x%p )\n", mmid, lod, src );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     UTextures.DownloadMipMapLevel( mmid, lod, src );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -1018,9 +1109,11 @@ guTexDownloadMipMap( GrMipMapId_t mmid, const void *src, const GuNccTable *table
 #ifdef OGL_DONE
     GlideMsg( "guTexDownloadMipMap( %d, 0x%p, 0x%p )\n", mmid, src, table );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     UTextures.DownloadMipMap( mmid, src, table );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -1044,7 +1137,7 @@ guTexAllocateMemory( GrChipID_t tmu,
         tmu, odd_even_mask, width, height, fmt, mm_mode, smallest_lod, largest_lod, aspect,
         s_clamp_mode, t_clamp_mode, minfilter_mode, magfilter_mode, lod_bias, trilinear );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
 	// Ignoring TMU as we are only emulating Glide and assuming a well behaviored program
 //    if ( tmu != GR_TMU0 )
@@ -1052,9 +1145,13 @@ guTexAllocateMemory( GrChipID_t tmu,
 //        return GR_NULL_MIPMAP_HANDLE;
 //    }
 
-    return UTextures.AllocateMemory( tmu, odd_even_mask, width, height, fmt, mm_mode,
+    GrMipMapId_t id = UTextures.AllocateMemory( tmu, odd_even_mask, width, height, fmt, mm_mode,
         smallest_lod, largest_lod, aspect, s_clamp_mode, t_clamp_mode,
         minfilter_mode, magfilter_mode, lod_bias, trilinear );
+        
+    LeaveGLThread();
+    
+   	return id;
 }
 
 //*************************************************
@@ -1064,11 +1161,13 @@ guTexSource( GrMipMapId_t id )
 #ifdef OGL_DONE
     GlideMsg( "guTexSource( %d )\n", id );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
     UTextures.Source( id );
+
+    LeaveGLThread();
 }
 
 //*************************************************

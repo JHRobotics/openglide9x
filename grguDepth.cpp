@@ -22,7 +22,7 @@ grDepthBufferMode( GrDepthBufferMode_t mode )
 #ifdef OGL_DONE
     GlideMsg( "grDepthBufferMode( %d )\n", mode );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -85,6 +85,7 @@ grDepthBufferMode( GrDepthBufferMode_t mode )
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthBufferMode" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -96,7 +97,7 @@ grDepthMask( FxBool enable )
 #ifdef OGL_DONE
     GlideMsg( "grDepthMask( %d )\n", enable );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -107,6 +108,7 @@ grDepthMask( FxBool enable )
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthMask" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -118,7 +120,7 @@ grDepthBufferFunction( GrCmpFnc_t func )
 #ifdef OGL_DONE
     GlideMsg( "grDepthBufferFunction( %d )\n", func );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -133,6 +135,7 @@ grDepthBufferFunction( GrCmpFnc_t func )
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthBufferFunction" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -147,7 +150,7 @@ FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level )
 #ifdef OGL_PARTDONE
     GlideMsg( "grDepthBiasLevel( %d )\n", level );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -156,6 +159,7 @@ FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level )
     if(OpenGL.DepthBufferType)
     {
     	OpenGL.DepthBiasLevel = level * 128.0;
+    	//OpenGL.DepthBiasLevel = level;
     }
     else
     {
@@ -177,5 +181,6 @@ FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level )
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthBiasLevel" );
 #endif
+    LeaveGLThread();
 }
 

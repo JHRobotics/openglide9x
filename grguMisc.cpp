@@ -38,7 +38,7 @@ grCullMode( GrCullMode_t mode )
 #ifdef OGL_DONE
     GlideMsg( "grCullMode( %d )\n", mode );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -56,12 +56,12 @@ grCullMode( GrCullMode_t mode )
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
             glFrontFace( GL_CCW );
-            GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
+            //GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         else
         {
             glFrontFace( GL_CW );
-            GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
+            //GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         break;
 
@@ -70,12 +70,12 @@ grCullMode( GrCullMode_t mode )
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
             glFrontFace( GL_CW );
-            GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
+            //GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         else
         {
             glFrontFace( GL_CCW );
-            GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
+            //GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         break;
     }
@@ -83,6 +83,8 @@ grCullMode( GrCullMode_t mode )
 #ifdef OPENGL_DEBUG
     GLErro( "grCullMode" );
 #endif
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -94,7 +96,7 @@ grClipWindow( FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy )
 #ifdef OGL_PARTDONE
     GlideMsg( "grClipWindow( %d, %d, %d, %d )\n", minx, miny, maxx, maxy );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -152,6 +154,8 @@ grClipWindow( FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy )
     }
 
     glMatrixMode( GL_MODELVIEW );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -161,13 +165,15 @@ grDisableAllEffects( void )
 #ifdef OGL_PARTDONE
     GlideMsg( "grDisableAllEffects( )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     grAlphaBlendFunction( GR_BLEND_ONE, GR_BLEND_ZERO, GR_BLEND_ONE, GR_BLEND_ZERO );
     grAlphaTestFunction( GR_CMP_ALWAYS );
     grChromakeyMode( GR_CHROMAKEY_DISABLE );
     grDepthBufferMode( GR_DEPTHBUFFER_DISABLE );
     grFogMode( GR_FOG_DISABLE );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -453,7 +459,11 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 		v->oow = q;
     v->x = v->x * q * Glide3ViewPort[2] * 0.5f + Glide3ViewPort[2] * 0.5f;
     v->y = v->y * q * Glide3ViewPort[3] * 0.5f + Glide3ViewPort[3] * 0.5f;
-    v->ooz = v->ooz * q * (Glide3DepthRange[1] - Glide3DepthRange[0]) * 0.5f * 65535.f + (Glide3DepthRange[1] + Glide3DepthRange[0]) * 0.5f * 65535.f;
+    
+    float z_range = Glide3DepthRange[1] - Glide3DepthRange[0];
+    
+    //v->ooz = v->ooz * q * z_range * 0.5f * 65535.f + z_range * 0.5f * 65535.f;
+    v->ooz = v->ooz * q * z_range * 0.5f + z_range * 0.5f;
 
 		if(VXLGetOffset(GR_PARAM_POS_PARGB) == 0)
 		{
@@ -500,7 +510,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 	GlideMsg( "grDrawVertexArray(%d, %d, --)\n", mode, count );
 #endif
 
-  SetGLThread();
+  EnterGLThread();
 	
 	switch(mode)
 	{
@@ -626,6 +636,8 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 			}
 			break;
 	}
+	
+  LeaveGLThread();
 }
 
 #define PVERTEX(_n) ((const void *)(mem+(stride*(_n))))
@@ -643,7 +655,7 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 	GlideMsg("grDrawVertexArrayContiguous(%d, %d, --, %u)\n", mode, count, stride);
 #endif
 	
-  SetGLThread();
+  EnterGLThread();
 	
 	switch(mode)
 	{
@@ -749,22 +761,28 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 			}
 			break;
 	}
+
+	LeaveGLThread();
 }
 #undef PVERTEX
 
 FX_ENTRY void FX_CALL grFlush ( void )
 {
-  SetGLThread();
+  EnterGLThread();
     
 	RenderDrawTriangles();
 	glFlush();
 	glFinish();
+
+  LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL grFinish ( void )
 {
-  SetGLThread();
+  EnterGLThread();
 	grFlush();
+
+	LeaveGLThread();
 }
 
 static inline FxU32 grGet_fill_buffer(void *dst, FxU32 dstlen, const void *src, FxU32 srclen)
@@ -1010,14 +1028,14 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/*2 8
 			The minimum and maximum allowable wbuffer values.*/
 			{
-				FxU32 wMinMax[] = {(FxU32)Glide3DepthRange[0], (FxU32)Glide3DepthRange[1]};
-				return grGet_fill_buffer(params, plength, &wMinMax[0], sizeof(wMinMax));
+				FxU32 wDefault[] = {SST1_WDEPTHVALUE_NEAREST, SST1_WDEPTHVALUE_FARTHEST};
+				return grGet_fill_buffer(params, plength, &wDefault[0], sizeof(wDefault));
 			}
 		case GR_ZDEPTH_MIN_MAX:
 			/*2 8
 			The minimum and maximum allowable zbuffer values.*/
 			{
-				const FxU32 zDefault[] = {65535, 0};
+				const FxU32 zDefault[] = {SST1_ZDEPTHVALUE_NEAREST, SST1_ZDEPTHVALUE_FARTHEST};
 				return grGet_fill_buffer(params, plength, &zDefault[0], sizeof(zDefault));
 			}
 	}
@@ -1165,7 +1183,7 @@ typedef FxU32 GrContext_t;
 
 FX_ENTRY FxBool FX_CALL grSelectContext( GrContext_t context )
 {
-  SetGLThread();
+  EnterGLThread();
 	
 	if(context == 1) return FXTRUE; /* only one context */
 		
@@ -1174,6 +1192,8 @@ FX_ENTRY FxBool FX_CALL grSelectContext( GrContext_t context )
 #endif
 
 	return FXFALSE;
+
+	LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)

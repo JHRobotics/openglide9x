@@ -96,7 +96,7 @@ grGlideInit( void )
 #ifdef OGL_DONE
     GlideMsg( "grGlideInit( )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     if ( OpenGL.GlideInit )
     {
@@ -168,7 +168,8 @@ grGlideInit( void )
   			Glide.TexelfxVersion = 2;
   			break;
   	}
-    
+ 
+    LeaveGLThread();   
 }
 
 //*************************************************
@@ -182,7 +183,7 @@ grGlideShutdown( void )
         return;
     }
     
-    SetGLThread();
+    EnterGLThread();
 
     OpenGL.GlideInit = false;
 
@@ -201,6 +202,8 @@ grGlideShutdown( void )
 
     RenderFree( );
     delete Textures;
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -212,7 +215,7 @@ grGlideSetState( const GrState *state )
 #ifdef OGL_PARTDONE
     GlideMsg( "grGlideSetState( --- )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     GlideState StateTemp;
 
@@ -248,6 +251,8 @@ grGlideSetState( const GrState *state )
     grClipWindow( StateTemp.ClipMinX, StateTemp.ClipMinY, StateTemp.ClipMaxX, StateTemp.ClipMaxY );
 //  grSstOrigin( StateTemp.OriginInformation );
 //  grTexSource( GR_TMU0, StateTemp.TexSource.StartAddress, StateTemp.TexSource.EvenOdd, &StateTemp.TexSource.Info );
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -313,7 +318,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #endif
 
 {
-	  SetGLThread();
+	  EnterGLThread();
 	  
     if ( OpenGL.WinOpen )
     {
@@ -334,6 +339,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #ifdef OGL_DEBUG
         Error( "grSstWinOpen: res = GR_RESOLUTION_NONE\n" );
 #endif
+        LeaveGLThread();
         return FXFALSE;
     }
 
@@ -342,6 +348,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #ifdef OGL_DEBUG
         Error( "grSstWinOpen: Refresh Incorrect\n" );
 #endif
+        LeaveGLThread();
         return FXFALSE;
     }
 
@@ -372,6 +379,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     // Initing OpenGL Window
     if ( !InitWindow( hwnd ) )
     {
+    	  LeaveGLThread();
         return FXFALSE;
     }
 
@@ -506,6 +514,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 
 		return 1;
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -537,7 +546,7 @@ FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
       #endif
     }
 
-    SetGLThread();
+    EnterGLThread();
 
     OpenGL.WinOpen = false;
 
@@ -590,6 +599,8 @@ FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
 #ifdef GLIDE3
 	return FXTRUE;
 #endif
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -672,10 +683,10 @@ grSstScreenWidth( void )
 FX_ENTRY void FX_CALL
 grSstOrigin( GrOriginLocation_t  origin )
 {
-//#ifdef OGL_DONE
+#ifdef OGL_DONE
     GlideMsg( "grSstSetOrigin( %d )\n", origin );
-//#endif
-    SetGLThread();
+#endif
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -704,6 +715,8 @@ grSstOrigin( GrOriginLocation_t  origin )
 #ifdef OPENGL_DEBUG
     GLErro( "grSstOrigin" );
 #endif
+
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -841,7 +854,7 @@ grSstIdle( void )
 #ifdef OGL_DONE
     GlideMsg( "grSetIdle( )\n" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
     glFlush( );
@@ -850,5 +863,7 @@ grSstIdle( void )
 #ifdef OPENGL_DEBUG
     GLErro( "grSstIdle" );
 #endif
+
+    LeaveGLThread();
 }
 

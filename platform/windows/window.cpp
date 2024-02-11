@@ -45,12 +45,8 @@ static BOOL mode_changed = false;
 
 static HHOOK win_hook = NULL;
 
-//CriticalSection rccs;
-static DWORD opengl_main_thread = 0;
-static HGLRC hRC2 = NULL;
-static DWORD hRC2_thread = 0;
-static HGLRC hRC3 = NULL;
-static DWORD hRC3_thread = 0;
+static CRITICAL_SECTION draw_cs;
+static DWORD draw_thread = 0;
 
 LRESULT CALLBACK DrawWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -214,7 +210,7 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     ZeroMemory( &pfd, sizeof( pfd ) );
     pfd.nSize        = sizeof( pfd );
     pfd.nVersion     = 1;
-    pfd.dwFlags      = /*PFD_DRAW_TO_WINDOW |*/ PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.iPixelType   = PFD_TYPE_RGBA;
     pfd.cColorBits   = BitsPerPixel;
     pfd.cDepthBits   = BitsPerPixel;
@@ -244,16 +240,10 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
         UserConfig.PrecisionFix = false;
     }
 
+		InitializeCriticalSection(&draw_cs);
     hRC = wglCreateContext( hDC );
-    hRC2 = wglCreateContext( hDC );
-    hRC3 = wglCreateContext( hDC );
-    wglShareLists(hRC, hRC2);
-    wglShareLists(hRC, hRC3);
-    hRC2_thread = 0;
-    hRC3_thread = 0;
-    
     wglMakeCurrent( hDC, hRC );
-    opengl_main_thread = GetCurrentThreadId();
+    draw_thread = GetCurrentThreadId();
     
 #ifdef OGL_DEBUG_HEAVY
     PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
@@ -287,7 +277,7 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
 
 void ResetGLThread()
 {
-	DWORD tid = GetCurrentThreadId();
+/*	DWORD tid = GetCurrentThreadId();
 	if(tid == hRC2_thread)
 	{
 		wglMakeCurrent(NULL, NULL);
@@ -298,37 +288,51 @@ void ResetGLThread()
 	{
 		wglMakeCurrent(NULL, NULL);
 		hRC3_thread = 0;
-	}
+	}*/
 }
 
-void SetGLThread()
+static void CloneContext()
 {
+	GrState state;
+	grGlideGetState(&state);
+	InitOpenGL();
+	grGlideSetState(&state);
+}
+
+void EnterGLThread()
+{	
 	if(hDC == NULL || hRC == NULL)
 	{
 		return;
 	}
 	
+	EnterCriticalSection(&draw_cs);
+	
 	DWORD tid = GetCurrentThreadId();
-
-	if(tid == opengl_main_thread) return;
-	if(tid == hRC2_thread) return;
-	if(tid == hRC3_thread) return;
 	
-	if(hRC2_thread == 0)
+	if(tid == draw_thread)
 	{
-		hRC2_thread = tid;
-		wglMakeCurrent(hDC, hRC2);
-		return;
+		LeaveCriticalSection(&draw_cs);
+		return; /* all OK */
 	}
-	
-	if(hRC2_thread == 0)
-	{
-		hRC3_thread = tid;
-		wglMakeCurrent(hDC, hRC3);
-		return;
-	}
-	
+		
+	/* flush old context, if there were any */
 	wglMakeCurrent(NULL, NULL);
+		
+	/* NOT OK, create new CTX and copy */
+	HGLRC new_hRC = wglCreateContext(hDC);
+	wglCopyContext(hRC, new_hRC, GL_ALL_ATTRIB_BITS);
+	
+	wglMakeCurrent(hDC, new_hRC);
+	
+	HGLRC old_hRc = hRC;
+	hRC = new_hRC;
+	draw_thread = tid;
+	LeaveCriticalSection(&draw_cs);	
+	
+	CloneContext();
+	
+	wglDeleteContext(old_hRc);
 }
 
 void FinaliseOpenGLWindow( void)
@@ -355,16 +359,9 @@ void FinaliseOpenGLWindow( void)
 
     wglMakeCurrent( NULL, NULL );
 
-    hRC3_thread = 0;
-    hRC2_thread = 0;
-
-    wglDeleteContext( hRC3 );
-    wglDeleteContext( hRC2 );
     wglDeleteContext( hRC );
     ReleaseDC( hWND, hDC );
 
-    hRC3 = NULL;
-    hRC2 = NULL;
     hRC = NULL;
     hDC = NULL;
     

@@ -16,7 +16,7 @@
 #include "FormatConversion.h"
 #include "OGLTables.h"
 
-#define TEX_TEMP_PIXELS (256 * 256)
+#define TEX_TEMP_PIXELS (256 * 256 * 2)
 
 static FxU32 m_tex_temp[ TEX_TEMP_PIXELS ];
 
@@ -106,7 +106,7 @@ PGTexture::~PGTexture( void )
     delete m_db;
 }
 
-void PGTexture::DownloadMipMap( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
+void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
 {
 #ifndef GLIDE3_ALPHA
     FxU32 mip_size = MipMapMemRequired( info->smallLod, 
@@ -194,12 +194,12 @@ void PGTexture::DownloadMipMap( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *in
 #endif
 }
 
-void PGTexture::DownloadMipMapPartial( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info, int start, int end )
+void PGTexture::DownloadMipMapPartial( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info, int start, int end )
 {
     // Glidos has different handling of grTexDownload, so keep it
     if ( info->format == GR_TEXFMT_BGRA_8888 )
     {
-        DownloadMipMap( startAddress, evenOdd, info );
+        DownloadMipMap( tmu, startAddress, evenOdd, info );
         return;
     }
 #ifndef GLIDE3_ALPHA
@@ -228,7 +228,7 @@ void PGTexture::DownloadMipMapPartial( FxU32 startAddress, FxU32 evenOdd, GrTexI
     }
 }
 
-void PGTexture::Source( FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
+void PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
 {
     m_startAddress = startAddress;
     m_evenOdd = evenOdd;
@@ -426,13 +426,13 @@ bool PGTexture::MakeReady( void )
                 Convert565Kto8888( (FxU16*)data, m_chromakey_value_565, m_tex_temp, texVals.nPixels );
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
             }
-            else if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
+            else if ( InternalConfig.OGLVersion > OGL_VER_1_1 && !InternalConfig.Textures32bit)
             {
                 OGL_LOAD_CREATE_TEXTURE( 3, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data );
             }
             else
             {
-                if ( InternalConfig.Wrap565to5551 )
+                if ( InternalConfig.Wrap565to5551 && !InternalConfig.Textures32bit)
                 {
                     Convert565to5551( (FxU32*)data, m_tex_temp, texVals.nPixels );
                     OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1_EXT, m_tex_temp );
@@ -446,7 +446,12 @@ bool PGTexture::MakeReady( void )
             break;
             
         case GR_TEXFMT_ARGB_4444:
-            if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
+        	  if(InternalConfig.Textures32bit)
+        	  {
+            	Convert4444to8888( (FxU16*)data, m_tex_temp, texVals.nPixels );
+            	OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+        	  }
+        	  else if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
             {
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_SHORT_4_4_4_4_REV, data );
             }
@@ -455,10 +460,16 @@ bool PGTexture::MakeReady( void )
                 Convert4444to4444special( (FxU32*)data, m_tex_temp, texVals.nPixels );
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_EXT, m_tex_temp );
             }
+
             break;
             
         case GR_TEXFMT_ARGB_1555:
-            if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
+        	  if(InternalConfig.Textures32bit)
+        	  {
+        	  	Convert1555to8888((FxU16*)data, m_tex_temp, texVals.nPixels);
+            	OGL_LOAD_CREATE_TEXTURE(4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp);
+        	  }
+            else if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
             {
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, data );
             }
@@ -520,6 +531,11 @@ bool PGTexture::MakeReady( void )
                 ConvertAP88to8888( (FxU16*)data, m_tex_temp, texVals.nPixels, m_palette );
                 OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
               }
+              else
+              {
+              	GlideMsg("Too large texture: texVals.nPixels %d\n", texVals.nPixels);
+              }
+              
             }
             break;
             

@@ -53,8 +53,10 @@ BOOL RegisterOGLClass();
 void Activate3DWindow();
 void Deactivate3DWindow();
 
-void SetGLThread();
+void EnterGLThread();
 void ResetGLThread();
+
+#define LeaveGLThread()
 
 int GetVRetrace();
 

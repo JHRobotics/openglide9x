@@ -373,7 +373,9 @@ void Convert1555to5551( FxU32 *Buffer1, FxU32 *Buffer2, int Pixels )
 
 #endif
 
-#ifdef HAVE_MMX
+//#ifdef HAVE_MMX
+#if 0
+/* JH: this is broken... */
 
 void Convert565to8888( FxU16 *Src, FxU32 *Dst, FxU32 NumberOfPixels )
 {
@@ -618,4 +620,42 @@ void SplitAP88( FxU16 *ap88, FxU8 *index, FxU8 *alpha, FxU32 pixels )
         *alpha++ = ( *ap88 >> 8 );
         *index++ = ( *ap88++ & 0xff );
     }
+}
+
+void Convert1555to8888( FxU16 *Buffer1, FxU32 *Buffer2, int Pixels )
+{
+   while ( Pixels > 0 )
+   {
+   		const FxU32 px = *Buffer1++;
+   		FxU32 dst = 0;
+   		
+   		if(px & 0x8000)
+   		{
+   			dst = 0xFF000000;
+   		}
+   		
+   		dst |= (px & 0x001F) << (3+16);
+   		dst |= (px & 0x03E0) << 6;
+   		dst |= (px & 0x7C00) >> 7; // 9-16
+   		
+      *Buffer2++ = dst;
+      Pixels--;
+   }
+}
+
+void Convert4444to8888( FxU16 *Buffer1, FxU32 *Buffer2, int Pixels )
+{
+   while ( Pixels > 0 )
+   {
+   		const FxU32 px = *Buffer1++;
+   		FxU32 dst = 0;
+   		
+   		dst |= ((px & 0xF000)*17) << 12; /* extend alpha */
+   		dst |=  (px & 0x0F00) >> 4;
+   		dst |=  (px & 0x00F0) << 8;
+   		dst |=  (px & 0x000F) << 20;
+   		
+      *Buffer2++ = dst;
+      Pixels--;
+   }
 }

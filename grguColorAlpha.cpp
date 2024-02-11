@@ -30,7 +30,7 @@ grDitherMode( GrDitherMode_t mode )
 #ifdef OGL_DONE
     GlideMsg( "grDitherMode( %d )\n", mode );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -49,6 +49,7 @@ grDitherMode( GrDitherMode_t mode )
 #ifdef OPENGL_DEBUG
     GLErro( "grDitherMode" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -60,7 +61,7 @@ grConstantColorValue( GrColor_t value )
 #ifdef OGL_DONE
     GlideMsg( "grConstantColorValue( 0x%X )\n", value );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     Glide.State.ConstantColorValue = value;
     ConvertColorF( value, 
@@ -68,6 +69,7 @@ grConstantColorValue( GrColor_t value )
                    OpenGL.ConstantColor[ 1 ], 
                    OpenGL.ConstantColor[ 2 ], 
                    OpenGL.ConstantColor[ 3 ] );
+    LeaveGLThread();
 }
 
 
@@ -80,13 +82,14 @@ grConstantColorValue4( float a, float r, float g, float b )
 #ifdef OGL_DONE
     GlideMsg( "grConstantColorValue4( %f, %f, %f, %f )\n", a, r, g, b );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     Glide.State.ConstantColorValue = ConvertConstantColor( r, g, b, a );
     OpenGL.ConstantColor[ 0 ] = r * D1OVER255;
     OpenGL.ConstantColor[ 1 ] = g * D1OVER255;
     OpenGL.ConstantColor[ 2 ] = b * D1OVER255;
     OpenGL.ConstantColor[ 3 ] = a * D1OVER255;
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -99,7 +102,7 @@ grColorMask( FxBool rgb, FxBool a )
     GlideMsg( "grColorMask( %s, %s )\n", 
         rgb ? "TRUE" : "FALSE", a  ? "TRUE" : "FALSE" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -112,6 +115,7 @@ grColorMask( FxBool rgb, FxBool a )
 #ifdef OPENGL_DEBUG
     GLErro( "grColorMask" );
 #endif
+    LeaveGLThread();
 }
 
 FX_ENTRY void FX_CALL
@@ -123,7 +127,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     GlideMsg( "grColorCombine( %d, %d, %d, %d, %s )\n",
         function, factor, local, other, invert ? "TRUE" : "FALSE" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -187,6 +191,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     }
 
     OpenGL.Texture = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -196,7 +201,7 @@ guColorCombineFunction( GrColorCombineFnc_t fnc )
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "guColorCombineFunction( %d )\n", fnc );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     switch ( fnc )
     {
@@ -279,6 +284,7 @@ guColorCombineFunction( GrColorCombineFnc_t fnc )
         case GR_COLORCOMBINE_CCRGB_BLEND_ITRGB_ON_TEXALPHA:     //0xd
             break;
     }
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -290,7 +296,7 @@ grAlphaTestReferenceValue( GrAlpha_t value )
 #ifdef OGL_DONE
     GlideMsg( "grAlphaTestReferenceValue( %d )\n", value );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -302,6 +308,7 @@ grAlphaTestReferenceValue( GrAlpha_t value )
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaTestReferenceValue" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -313,7 +320,7 @@ grAlphaTestFunction( GrCmpFnc_t function )
 #ifdef OGL_DONE
     GlideMsg( "grAlphaTestFunction( %d )\n", function );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -329,6 +336,7 @@ grAlphaTestFunction( GrCmpFnc_t function )
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaTestFunction" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -340,7 +348,7 @@ grAlphaBlendFunction( GrAlphaBlendFnc_t rgb_sf,   GrAlphaBlendFnc_t rgb_df,
     GlideMsg( "grAlphaBlendFunction( %d, %d, %d, %d )\n",
         rgb_sf, rgb_df, alpha_sf, alpha_df );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -432,6 +440,7 @@ grAlphaBlendFunction( GrAlphaBlendFnc_t rgb_sf,   GrAlphaBlendFnc_t rgb_df,
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaBlendFunction" );
 #endif
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -444,7 +453,7 @@ grAlphaCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     GlideMsg( "grAlphaCombine( %d, %d, %d, %d, %s )\n",
         function, factor, local, other, invert ? "TRUE" : "FALSE" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -468,6 +477,7 @@ grAlphaCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     }
 
     OpenGL.Texture = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -475,7 +485,7 @@ FX_ENTRY void FX_CALL
 grAlphaControlsITRGBLighting( FxBool enable )
 {
 #ifdef OGL_NOTDONE
-    GlideMsg("grAlphaControlsTGBALighting( %s )\n", enable ? "TRUE" : "FALSE" );
+    GlideMsg("grAlphaControlsITRGBLighting( %s )\n", enable ? "TRUE" : "FALSE" );
 #endif
 }
 
@@ -486,7 +496,7 @@ guAlphaSource( GrAlphaSource_t dwMode )
 #if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
     GlideMsg( "guAlphaSource( %d )\n", dwMode );
 #endif
-    SetGLThread();
+    EnterGLThread();
     
     switch ( dwMode )
     {
@@ -510,6 +520,7 @@ guAlphaSource( GrAlphaSource_t dwMode )
                 GR_COMBINE_LOCAL_ITERATED, GR_COMBINE_OTHER_TEXTURE, FXFALSE ); 
             break;
     }
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -521,7 +532,7 @@ grChromakeyValue( GrColor_t value )
 #ifdef OGL_PARTDONE
     GlideMsg( "grChromakeyValue( 0x%X )\n", value );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -537,6 +548,7 @@ grChromakeyValue( GrColor_t value )
     Textures->ChromakeyValue( OpenGL.ChromaColor );
 
     Glide.State.ChromakeyValue = value;
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -548,7 +560,7 @@ grChromakeyMode( GrChromakeyMode_t mode )
 #ifdef OGL_PARTDONE
     GlideMsg( "grChromakeyMode( %s )\n", mode ? "TRUE" : "FALSE" );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles( );
 
@@ -564,6 +576,7 @@ grChromakeyMode( GrChromakeyMode_t mode )
     {
         OpenGL.ChromaKey = false;
     }
+    LeaveGLThread();
 }
 
 //*************************************************
@@ -573,7 +586,7 @@ grGammaCorrectionValue( float value )
 #ifdef OGL_PARTDONE
     GlideMsg( "grGammaCorrectionValue( %f )\n", value );
 #endif
-    SetGLThread();
+    EnterGLThread();
 
     RenderDrawTriangles();
 
@@ -584,5 +597,6 @@ grGammaCorrectionValue( float value )
 #ifdef OPENGL_DEBUG
     GLErro( "grGammaCorrectionValue" );
 #endif
+    LeaveGLThread();
 }
 

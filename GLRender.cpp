@@ -77,10 +77,15 @@ static float            hAspect,
 //**************************************************************
 static float OGLFogDistance(float w)
 {
-	  w =  max(w, D1OVER65535);
+	  //w =  max(w, D1OVER65535);
     
     int i;
-    float oow = 1.0f/w;
+    
+    float oow = 65535;
+    if(w != 0.0f)
+    {
+    	oow = 1.0f/w;
+    }
     
     for (i = 0; ((i < GR_FOG_TABLE_SIZE-1) && (tableIndexToW[i] < oow)); i++);
     
@@ -139,7 +144,8 @@ void RenderUpdateArrays( void )
     p_glSecondaryColorPointerEXT( 3, GL_FLOAT, 4 * sizeof( GLfloat ), &OGLRender.TColor2[0] );
     if ( InternalConfig.EXT_fog_coord )
     {
-        p_glFogCoordPointerEXT( 1, GL_FLOAT, &OGLRender.TFog[0] );
+        //p_glFogCoordPointerEXT( 1, GL_FLOAT, &OGLRender.TFog[0] );
+        p_glFogCoordPointerEXT( GL_FLOAT, 0, &OGLRender.TFog[0] );
     }
 
 #ifdef OPENGL_DEBUG
@@ -661,6 +667,34 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
         pTS->aoow = atmuoow * maxoow;
         pTS->boow = btmuoow * maxoow;
         pTS->coow = ctmuoow * maxoow;
+        
+#if GLIDE_NUM_TMU > 1
+        pTS->as1 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
+        pTS->at1 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
+        pTS->bs1 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
+        pTS->bt1 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
+        pTS->cs1 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
+        pTS->ct1 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
+
+        pTS->aq1 = pTS->bq1 = pTS->cq1 = 0.0f;
+        pTS->aoow1 = atmuoow * maxoow;
+        pTS->boow1 = btmuoow * maxoow;
+        pTS->coow1 = ctmuoow * maxoow;
+#endif
+
+#if GLIDE_NUM_TMU > 2
+        pTS->as2 = a->tmuvtx[ 2 ].sow * wAspect * maxoow;
+        pTS->at2 = a->tmuvtx[ 2 ].tow * hAspect * maxoow;
+        pTS->bs2 = b->tmuvtx[ 2 ].sow * wAspect * maxoow;
+        pTS->bt2 = b->tmuvtx[ 2 ].tow * hAspect * maxoow;
+        pTS->cs2 = c->tmuvtx[ 2 ].sow * wAspect * maxoow;
+        pTS->ct2 = c->tmuvtx[ 2 ].tow * hAspect * maxoow;
+
+        pTS->aq2 = pTS->bq2 = pTS->cq2 = 0.0f;
+        pTS->aoow2 = atmuoow * maxoow;
+        pTS->boow2 = btmuoow * maxoow;
+        pTS->coow2 = ctmuoow * maxoow;
+#endif
     }
 
     if( InternalConfig.FogEnable )
@@ -1490,7 +1524,7 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
     {
         pV->az = 0.0f;
     }
-    else 
+    else
     if ( OpenGL.DepthBufferType )
     {
         pV->az = a->ooz * D1OVER65535;
