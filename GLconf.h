@@ -7,8 +7,9 @@ OGL_CFG_BOOL(InitFullScreen,           true, "Fullscreen mode")
 OGL_CFG_BOOL(InitFullScreen,           false, "Fullscreen mode")
 #endif
 
-OGL_CFG_BOOL(PrecisionFix,             true, "")
+OGL_CFG_BOOL(PrecisionFix,             true, "Round values for integer depth buffer")
 OGL_CFG_BOOL(CreateWindow,             true, "Create Window if NULL is passed to grSstWinOpen")
+OGL_CFG_INT(DepthBits,                 24, 0, 32, "Sets required depth buffer bits, 0 for same as screen")
 OGL_CFG_BOOL(EnableMipMaps,            true, "")
 OGL_CFG_BOOL(BuildMipMaps,            false, "")
 OGL_CFG_BOOL(IgnorePaletteChange,     false, "")

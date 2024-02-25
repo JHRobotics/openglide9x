@@ -213,7 +213,15 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.iPixelType   = PFD_TYPE_RGBA;
     pfd.cColorBits   = BitsPerPixel;
-    pfd.cDepthBits   = BitsPerPixel;
+    
+    if(UserConfig.DepthBits != 0)
+    {
+    	pfd.cDepthBits   = UserConfig.DepthBits;
+    }
+    else
+    {
+    	pfd.cDepthBits   = BitsPerPixel;
+    }
 
     if ( !( PixFormat = ChoosePixelFormat( hDC, &pfd ) ) )
     {
@@ -235,7 +243,7 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     GlideMsg( "ColorBits	= %d\n", pfd.cColorBits );
     GlideMsg( "DepthBits	= %d\n", pfd.cDepthBits );
 
-    if ( pfd.cDepthBits > 16 )
+    if ( pfd.cDepthBits > 24 ) /* JH: 24 bit int need fixing too */
     {
         UserConfig.PrecisionFix = false;
     }
