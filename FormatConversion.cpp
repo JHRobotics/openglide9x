@@ -90,7 +90,7 @@ copying:
          "movq  %4, %%mm5;"
          "movq  %3, %%mm4;"
          ".align 16;"
-         "MMXConvert565to5551_copying:"
+         "MMXConvert565to5551_copying%=:"
          "movq  (%1,%0), %%mm0;"
          "movq  %%mm6, %%mm1;"
          "movq  %%mm0, %%mm2;"
@@ -101,7 +101,7 @@ copying:
          "por   %%mm1, %%mm0;"
          "movq  %%mm0, (%2,%0);"
          "sub" OP " $8, %0;"
-         "jge   MMXConvert565to5551_copying;"
+         "jge   MMXConvert565to5551_copying%=;"
          "EMMS;"
          : /* No outputs */
          : "r" ((FxU)NumberOfPixels), "r" (Src), "r" (Dst), /*Inputs */
@@ -173,7 +173,7 @@ copying:
          "movq  %4, %%mm5;"
          "movq  %3, %%mm4;"
          ".align 16;"
-         "MMXConvert5551to565_copying:"
+         "MMXConvert5551to565_copying%=:"
          "movq  (%1,%0), %%mm0;"
          "movq  %%mm0, %%mm2;"
          "pand  %%mm5, %%mm0;"
@@ -182,7 +182,7 @@ copying:
          "por   %%mm2, %%mm0;"
          "movq  %%mm0, (%2,%0);"
          "sub" OP " $8, %0;"
-         "jge   MMXConvert5551to565_copying;"
+         "jge   MMXConvert5551to565_copying%=;"
          "EMMS;"
          : /* No outputs */
          : "r" ((FxU)NumberOfPixels), "r" (Src), "r" (Dst), /*Inputs */
@@ -254,7 +254,7 @@ copying:
          "movq  %4, %%mm7;"
          "movq  %3, %%mm6;"
          ".align 16;"
-         "MMXConvert4444to4444special_copying:"
+         "MMXConvert4444to4444special_copying%=:"
          "movq  (%1,%0), %%mm0;"
          "movq  %%mm0, %%mm1;"
          "pand  %%mm6, %%mm0;"
@@ -264,7 +264,7 @@ copying:
          "por   %%mm1, %%mm0;"
          "movq  %%mm0, (%2,%0);"
          "sub" OP " $8, %0;"
-         "jge   MMXConvert4444to4444special_copying;"
+         "jge   MMXConvert4444to4444special_copying%=;"
          "EMMS;"
          : /* No outputs */
          : "r" ((FxU)NumberOfPixels), "r" (Src), "r" (Dst), /*Inputs */
@@ -337,7 +337,7 @@ copying:
          "movq  %4, %%mm7;"
          "movq  %3, %%mm6;"
          ".align 16;"
-         "MMXConvert1555to5551_copying:"
+         "MMXConvert1555to5551_copying%=:"
          "movq  (%1,%0), %%mm0;"
          "movq  %%mm0, %%mm1;"
          "pand  %%mm6, %%mm0;"
@@ -347,7 +347,7 @@ copying:
          "por   %%mm1, %%mm0;"
          "movq  %%mm0, (%2,%0);"
          "sub" OP " $8, %0;"
-         "jge   MMXConvert1555to5551_copying;"
+         "jge   MMXConvert1555to5551_copying%=;"
          "EMMS;"
          : /* No outputs */
          : "r" ((FxU)NumberOfPixels), "r" (Src), "r" (Dst), /*Inputs */
@@ -437,7 +437,7 @@ copying:
          "movq  %5, %%mm5;"
          "movq  %6, %%mm4;"
          ".align 16;"
-         "MMXConvert565to8888_copying:"
+         "MMXConvert565to8888_copying%=:"
          "movq  (%1), %%mm0;"
          "add" OP " $8, %1;"
          "movq  %%mm0, %%mm2;"
@@ -463,7 +463,7 @@ copying:
          "add" OP " $16, %2;"
          "movq  %%mm0, -8(%2);"
          "sub" OP " $4, %0;"
-         "jg    MMXConvert565to8888_copying;"
+         "jg    MMXConvert565to8888_copying%=;"
          "EMMS;"
          : /* No outputs */
          : "r" ((FxU)NumberOfPixels), "r" (Src), "r" (Dst), /*Inputs */

@@ -103,7 +103,7 @@ else
   
   ifdef DEBUG
     DD_DEFS = -DDEBUG -DOGL_NOTDONE -DOGL_DEBUG
-    #  -DOGL_DONE -DOGL_PARTDONE
+    #  -DOGL_DONE -DOGL_PARTDONE -DOGL_COMBINE
   else
     DD_DEFS = -DNDEBUG
   endif
@@ -117,7 +117,13 @@ else
     CXXFLAGS = -std=$(CXXSTD) -O0 -g  $(TUNE) $(INCLUDE) $(DD_DEFS) $(DEFS)
     LDFLAGS = -std=$(CXXSTD)
   endif
-  
+
+  ifdef LTO
+    CFLAGS += -flto=auto
+    CXXFLAGS += -flto=auto
+    LDFLAGS += -flto=auto
+  endif
+
   GLIDE_LIBS  = -static -Lpthread9x pthread9x/crtfix.o -lpthread -lopengl32 -lgdi32
   GLIDE2_DEF = Glide2x.def
   GLIDE3_DEF = Glide3x.def

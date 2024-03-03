@@ -423,7 +423,7 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 	{
 		VXLGetFloat(v->r,   GR_PARAM_POS_RGB, 0);
 		VXLGetFloat(v->g,   GR_PARAM_POS_RGB, 1);
-		VXLGetFloat(v->b,   GR_PARAM_POS_RGB, 2); 
+		VXLGetFloat(v->b,   GR_PARAM_POS_RGB, 2);
 		VXLGetFloat(v->a,   GR_PARAM_POS_A,   0);
 	}
 	else
@@ -1226,6 +1226,8 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 				break;
 			case GR_PARAM_PARGB:
 				VXLPosition[GR_PARAM_POS_PARGB] = offset;
+				VXLPosition[GR_PARAM_POS_RGB] = 0;
+				VXLPosition[GR_PARAM_POS_A]   = 0;
 				break;
 			case GR_PARAM_ST0:
 				VXLPosition[GR_PARAM_POS_ST0] = offset;

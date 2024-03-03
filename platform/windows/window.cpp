@@ -465,24 +465,37 @@ void SwapBuffers()
 
 /*
  * JH: this doesn't get real vretrace period, only simulating it's time
- * with system timer
+ * with system timer 
+ * Edit: GetTickCount has very low resolution, using solution from Wine
  */
 int GetVRetrace()
 {
-	DWORD period = 1000/60;
-	if(OpenGL.WaitSignal)
+	LONGLONG freq_per_frame, freq_per_line;
+	LARGE_INTEGER counter, freq_per_sec;
+	unsigned refresh_rate, height;
+	int scanline;
+
+	if (!QueryPerformanceCounter(&counter) || !QueryPerformanceFrequency(&freq_per_sec))
+		return 0;
+
+	refresh_rate = 60;
+
+	freq_per_frame = freq_per_sec.QuadPart / refresh_rate;
+
+	/* Assume 20 scan lines in the vertical blank. */
+	freq_per_line = freq_per_frame / (height + 20);
+	scanline = (counter.QuadPart % freq_per_frame) / freq_per_line;
+
+	if (scanline < height)
 	{
-		period = OpenGL.WaitSignal;
+		// visible
+		return 0;
 	}
-	DWORD vtrace = (period * 0.9f + 0.5f);
-	
-	DWORD screen_time = GetTickCount() % period;
-	if(screen_time <= vtrace)
+	else
 	{
+		// vblank
 		return 1;
 	}
-	
-	return 0;
 }
 
 #endif // !C_USE_SDL && WIN32
