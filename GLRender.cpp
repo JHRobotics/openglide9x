@@ -303,7 +303,7 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
 
         glEnable( GL_POLYGON_OFFSET_FILL );
 
-        if ( 0 && InternalConfig.EXT_vertex_array ) // ????
+        if (InternalConfig.EXT_vertex_array )
         {
             glColorPointer( 4, GL_FLOAT, 0, &OGLRender.TColor2 );
             glDrawArrays( GL_TRIANGLES, 0, OGLRender.NumberOfTriangles * 3 );
@@ -700,8 +700,11 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
     if( InternalConfig.FogEnable )
     {
         pF = &OGLRender.TFog[ OGLRender.NumberOfTriangles ];
-//        if ( Glide.State.FogMode == GR_FOG_WITH_TABLE )
+#ifdef NEW_FOG
+        if ( Glide.State.FogMode == GR_FOG_WITH_TABLE )
+#else
         if ( Glide.State.FogMode & GR_FOG_WITH_TABLE )
+#endif
         {
 #ifndef NEW_FOG
             pF->af = (float)OpenGL.FogTable[ (FxU16)(1.0f / a->oow) ] * D1OVER255;

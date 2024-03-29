@@ -1,5 +1,5 @@
 
-OGL_CFG_BOOL(FogEnable,                true, "")
+OGL_CFG_BOOL(FogEnable,                false, "Enable fog (Warning: fog is broken now)")
 
 #ifndef DEBUG
 OGL_CFG_BOOL(InitFullScreen,           true, "Fullscreen mode")

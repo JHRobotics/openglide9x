@@ -163,8 +163,8 @@ FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level )
     }
     else
     {
-    	//OpenGL.DepthBiasLevel = level * 10.0f;
-    	OpenGL.DepthBiasLevel = level;
+    	OpenGL.DepthBiasLevel = level * 10.0f;
+    	//OpenGL.DepthBiasLevel = level;
     }
 
     glPolygonOffset( 1.0f, OpenGL.DepthBiasLevel );

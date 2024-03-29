@@ -95,6 +95,8 @@ grFogMode( GrFogMode_t mode )
                         modeAdd;
     static GLfloat      ZeroColor[ 4 ] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
+		if ( !InternalConfig.FogEnable ) return;
+
     EnterGLThread();
 
     RenderDrawTriangles( );

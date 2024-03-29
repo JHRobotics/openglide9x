@@ -285,10 +285,6 @@ void ValidateUserConfig( void )
 
     if ( InternalConfig.EXT_fog_coord )
     {
-        InternalConfig.FogEnable    = true;
-    }
-    else
-    {
         InternalConfig.FogEnable    = false;
     }
     

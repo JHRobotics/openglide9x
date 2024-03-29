@@ -119,9 +119,9 @@ else
   endif
 
   ifdef LTO
-    CFLAGS += -flto=auto
-    CXXFLAGS += -flto=auto
-    LDFLAGS += -flto=auto
+    CFLAGS += -flto=auto -pipe
+    CXXFLAGS += -flto=auto -pipe
+    LDFLAGS += -flto=auto -pipe
   endif
 
   GLIDE_LIBS  = -static -Lpthread9x pthread9x/crtfix.o -lpthread -lopengl32 -lgdi32
@@ -173,6 +173,8 @@ glide_SRC  := \
 	GLExtensions.cpp \
 	PGTexture.cpp \
 	FormatConversion.cpp \
+	FormatConversionSSE.cpp \
+	FormatConversionMMX.cpp \
 	grguBuffer.cpp \
 	grguColorAlpha.cpp \
 	GLutil.cpp \

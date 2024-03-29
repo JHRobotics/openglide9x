@@ -472,13 +472,11 @@ int GetVRetrace()
 {
 	LONGLONG freq_per_frame, freq_per_line;
 	LARGE_INTEGER counter, freq_per_sec;
-	unsigned refresh_rate, height;
+	unsigned refresh_rate = 60, height = 640;
 	int scanline;
 
 	if (!QueryPerformanceCounter(&counter) || !QueryPerformanceFrequency(&freq_per_sec))
-		return 0;
-
-	refresh_rate = 60;
+		return -1;
 
 	freq_per_frame = freq_per_sec.QuadPart / refresh_rate;
 

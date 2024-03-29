@@ -755,17 +755,22 @@ grSstVRetraceOn( void )
 #ifdef OGL_DONE
     GlideMsg( "grSstVRetraceOn( )\n" );
 #endif
+	int vtrace = GetVRetrace();
 
-#if 0
-	/* JH: result oscilating between FXTRUE/FXFALSE
-	 * for some stupid games which waiting for retrace and
-	 * and after for retrace ends. Forever.
-	 */
-		Glide.State.VRetrace ^= 1;
+	if(vtrace < 0) /* QueryPerformanceCounter not working */
+	{
+		/* JH: result oscilating between FXTRUE/FXFALSE
+		 * for some stupid games which waiting for retrace and
+		 * and after for retrace ends. Forever.
+		 */
+			Glide.State.VRetrace ^= 1;
+			return Glide.State.VRetrace;
+	}
+	else
+	{
+		Glide.State.VRetrace = vtrace;
 		return Glide.State.VRetrace;
-#endif
-		
-		return GetVRetrace();
+	}
 }
 
 //*************************************************
