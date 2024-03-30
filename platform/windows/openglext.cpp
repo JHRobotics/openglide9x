@@ -19,9 +19,11 @@
 #include "platform.h"
 #include "platform/openglext.h"
 
+#include "dyngl.h"
+
 ExtFn OGLGetProcAddress(const char *x)
 {
-    return (ExtFn)wglGetProcAddress(x);
+    return (ExtFn)DGL(wglGetProcAddress)(x);
 }
 
 #endif // !C_USE_SDL && WIN32

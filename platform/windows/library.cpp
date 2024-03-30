@@ -29,6 +29,27 @@ HCURSOR hDefault = NULL;
 
 HINSTANCE glideDLLInt = NULL;
 
+static DEVMODEA savedMode;
+static BOOL saveModeUsable = FALSE;
+
+static void desktopSave()
+{
+	memset(&savedMode, 0, sizeof(DEVMODEA));
+	savedMode.dmSize = sizeof(DEVMODEA);
+	
+	saveModeUsable = EnumDisplaySettingsA(NULL, ENUM_REGISTRY_SETTINGS, &savedMode);
+}
+
+static void desktopRestore()
+{
+	if(saveModeUsable)
+	{
+		savedMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+		ChangeDisplaySettingsA(&savedMode, CDS_FULLSCREEN | CDS_RESET);
+	}
+}
+
+
 extern "C" {
 	BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved );
 }
@@ -46,6 +67,8 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
 #ifdef HAVE_CRTEX
     		crt_locks_init(0);
 #endif
+        desktopSave();
+        dyngl_init(hinstDLL);
         if ( !ClearAndGenerateLogFile( ) )
         {
             return FALSE;
@@ -102,12 +125,17 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         break;
 
     case DLL_PROCESS_DETACH:
+    		//if(lpvreserved != NULL) break;
+    			
         grGlideShutdown( );
         CloseLogFile( );
         
         if(hDefault != NULL) DestroyCursor(hDefault);
         if(hTransparent != NULL) DestroyCursor(hTransparent);
+        	
+        dyngl_destroy();
         
+        desktopRestore();
         break;
     }
     return TRUE;

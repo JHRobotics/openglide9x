@@ -189,11 +189,11 @@ void TexDB::Clear( void )
 
 TexDB::Record::Record( bool two_tex )
 {
-   glGenTextures( 1, &texNum );
+   DGL(glGenTextures)( 1, &texNum );
 
    if ( two_tex )
    {
-         glGenTextures( 1, &tex2Num );
+         DGL(glGenTextures)( 1, &tex2Num );
    }
    else
    {
@@ -203,11 +203,11 @@ TexDB::Record::Record( bool two_tex )
 
 TexDB::Record::~Record( void )
 {
-   glDeleteTextures( 1, &texNum );
+   DGL(glDeleteTextures)( 1, &texNum );
 
    if ( tex2Num != 0 )
    {
-         glDeleteTextures( 1, &tex2Num );
+         DGL(glDeleteTextures)( 1, &tex2Num );
    }
 }
 

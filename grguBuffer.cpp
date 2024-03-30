@@ -57,24 +57,24 @@ grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU32 depth )
             old_color = color;
             ConvertColorF( color, BR, BG, BB, BA );
         }
-        glClearColor( BR, BG, BB, BA );
+        DGL(glClearColor)( BR, BG, BB, BA );
     }
     
     if ( Glide.State.DepthBufferWritting )
     {
-        glClearDepth( depth * D1OVER65535 );
+        DGL(glClearDepth)( depth * D1OVER65535 );
         Bits |= GL_DEPTH_BUFFER_BIT;
     }
 
 	if ( ! OpenGL.Clipping )
 	{
-	    glClear( Bits );
+	    DGL(glClear)( Bits );
 	}
 	else
 	{
-		glEnable( GL_SCISSOR_TEST );
-		glClear( Bits );
-		glDisable( GL_SCISSOR_TEST );
+		DGL(glEnable)( GL_SCISSOR_TEST );
+		DGL(glClear)( Bits );
+		DGL(glDisable)( GL_SCISSOR_TEST );
 	}
 
 #ifdef OPENGL_DEBUG
@@ -96,7 +96,7 @@ grBufferSwap( int swap_interval )
     EnterGLThread();
 
     RenderDrawTriangles( );
-    glFlush( );
+    DGL(glFlush)( );
 
 #ifdef OGL_DEBUG
     static float    Temp = 1.0f;
@@ -162,7 +162,7 @@ grRenderBuffer( GrBuffer_t dwBuffer )
     // Valid parameters are only FRONT and BACK ( 0x0 and 0x1 )
     OpenGL.RenderBuffer = GL_FRONT + dwBuffer;
 
-    glDrawBuffer( OpenGL.RenderBuffer );
+    DGL(glDrawBuffer)( OpenGL.RenderBuffer );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grRenderBuffer" );

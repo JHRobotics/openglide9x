@@ -39,11 +39,11 @@ grDitherMode( GrDitherMode_t mode )
     if ( mode != GR_DITHER_DISABLE )
     {
         // GR_DITHER_2x2 or GR_DITHER_4x4
-        glEnable( GL_DITHER );
+        DGL(glEnable)( GL_DITHER );
     }
     else
     {
-        glDisable( GL_DITHER );
+        DGL(glDisable)( GL_DITHER );
     }
 
 #ifdef OPENGL_DEBUG
@@ -110,7 +110,7 @@ grColorMask( FxBool rgb, FxBool a )
     Glide.State.AlphaMask = a;
     OpenGL.ColorMask = rgb;
 
-    glColorMask( rgb, rgb, rgb, a );
+    DGL(glColorMask)( rgb, rgb, rgb, a );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grColorMask" );
@@ -169,13 +169,13 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     if ( ( Glide.State.ColorCombineFactor == GR_COMBINE_FACTOR_TEXTURE_ALPHA ) &&
          ( Glide.State.ColorCombineOther == GR_COMBINE_OTHER_TEXTURE ) )
     {
-        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
+        DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
     }
     else
     if ( ( Glide.State.ColorCombineFactor == GR_COMBINE_FACTOR_TEXTURE_RGB ) &&
          ( Glide.State.ColorCombineOther == GR_COMBINE_OTHER_TEXTURE ) )
     {
-        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND );
+        DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND );
     }
     else
 /*    if (( Glide.State.ColorCombineFactor == GR_COMBINE_FACTOR_ONE ) &&
@@ -183,11 +183,11 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
         ( ( Glide.State.ColorCombineFunction == GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA ) || 
         ( Glide.State.ColorCombineFunction == GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL ) ) )
     {
-        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
+        DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
     }
     else*/
     {
-        glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+        DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
     }
 
     OpenGL.Texture = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
@@ -303,7 +303,7 @@ grAlphaTestReferenceValue( GrAlpha_t value )
     Glide.State.AlphaReferenceValue = value;
     OpenGL.AlphaReferenceValue = value * D1OVER255;
 
-    glAlphaFunc( OpenGL.AlphaTestFunction, OpenGL.AlphaReferenceValue );
+    DGL(glAlphaFunc)( OpenGL.AlphaTestFunction, OpenGL.AlphaReferenceValue );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaTestReferenceValue" );
@@ -330,8 +330,8 @@ grAlphaTestFunction( GrCmpFnc_t function )
     // To port it to anything else than OpenGL we NEED to change this code
     OpenGL.AlphaTestFunction = GL_NEVER + function;
 
-    glEnable( GL_ALPHA_TEST );
-    glAlphaFunc( OpenGL.AlphaTestFunction, OpenGL.AlphaReferenceValue );
+    DGL(glEnable)( GL_ALPHA_TEST );
+    DGL(glAlphaFunc)( OpenGL.AlphaTestFunction, OpenGL.AlphaReferenceValue );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaTestFunction" );
@@ -425,7 +425,7 @@ grAlphaBlendFunction( GrAlphaBlendFnc_t rgb_sf,   GrAlphaBlendFnc_t rgb_df,
 
 //    if ( ! InternalConfig.BlendFuncSeparateEXTEnable )
 //    {
-        glBlendFunc( OpenGL.SrcBlend, OpenGL.DstBlend );
+        DGL(glBlendFunc)( OpenGL.SrcBlend, OpenGL.DstBlend );
 //    }
 //    else
 //    {

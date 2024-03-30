@@ -106,7 +106,7 @@ typedef BOOL (WINAPI * GLIDE_PFNWGLSWAPINTERVALEXTPROC) (int interval);
 BOOL setVSync()
 {
 	GLIDE_PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
-	wglSwapIntervalEXT = (GLIDE_PFNWGLSWAPINTERVALEXTPROC) wglGetProcAddress("wglSwapIntervalEXT");
+	wglSwapIntervalEXT = (GLIDE_PFNWGLSWAPINTERVALEXTPROC) DGL(wglGetProcAddress)("wglSwapIntervalEXT");
 	if(wglSwapIntervalEXT)
 	{
 		return wglSwapIntervalEXT(UserConfig.SwapInterval);
@@ -134,7 +134,13 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     unsigned int            BitsPerPixel;
     HWND                    phwnd = (HWND) wnd;
     HWND                    hwnd = NULL;
-        
+    
+    if(!dyngl_load())
+    {
+    	MessageBox( NULL, "Cannot load opengl32.dll", "Error", MB_OK );
+    	exit(1);
+    }
+    
     if( phwnd == NULL )
     {
       phwnd = GetActiveWindow();
@@ -249,16 +255,16 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     }
 
 		InitializeCriticalSection(&draw_cs);
-    hRC = wglCreateContext( hDC );
-    wglMakeCurrent( hDC, hRC );
+    hRC = DGL(wglCreateContext)( hDC );
+    DGL(wglMakeCurrent)( hDC, hRC );
     draw_thread = GetCurrentThreadId();
     
 #ifdef OGL_DEBUG_HEAVY
-    PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)wglGetProcAddress("glDebugMessageCallback");
+    PFNGLDEBUGMESSAGECALLBACKPROC p_glDebugMessageCallback = (PFNGLDEBUGMESSAGECALLBACKPROC)DGL(wglGetProcAddress)("glDebugMessageCallback");
     
     if(p_glDebugMessageCallback != NULL)
     {
-    	glEnable(GL_DEBUG_OUTPUT);
+    	DGL(glEnable)(GL_DEBUG_OUTPUT);
 			p_glDebugMessageCallback(MessageCallback, 0);
 		}
 		else
@@ -325,13 +331,13 @@ void EnterGLThread()
 	}
 		
 	/* flush old context, if there were any */
-	wglMakeCurrent(NULL, NULL);
+	DGL(wglMakeCurrent)(NULL, NULL);
 		
 	/* NOT OK, create new CTX and copy */
-	HGLRC new_hRC = wglCreateContext(hDC);
-	wglCopyContext(hRC, new_hRC, GL_ALL_ATTRIB_BITS);
+	HGLRC new_hRC = DGL(wglCreateContext)(hDC);
+	DGL(wglCopyContext)(hRC, new_hRC, GL_ALL_ATTRIB_BITS);
 	
-	wglMakeCurrent(hDC, new_hRC);
+	DGL(wglMakeCurrent)(hDC, new_hRC);
 	
 	HGLRC old_hRc = hRC;
 	hRC = new_hRC;
@@ -340,7 +346,7 @@ void EnterGLThread()
 	
 	CloneContext();
 	
-	wglDeleteContext(old_hRc);
+	DGL(wglDeleteContext)(old_hRc);
 }
 
 void FinaliseOpenGLWindow( void)
@@ -365,9 +371,9 @@ void FinaliseOpenGLWindow( void)
     	SetSystemCursor(hDefault, OCR_NORMAL);
     }
 
-    wglMakeCurrent( NULL, NULL );
+    DGL(wglMakeCurrent)( NULL, NULL );
 
-    wglDeleteContext( hRC );
+    DGL(wglDeleteContext)( hRC );
     ReleaseDC( hWND, hDC );
 
     hRC = NULL;

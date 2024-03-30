@@ -71,7 +71,7 @@ grLfbLock( GrLock_t dwType,
     {
         FxU32 j;
 
-        glReadBuffer( dwBuffer == GR_BUFFER_BACKBUFFER
+        DGL(glReadBuffer)( dwBuffer == GR_BUFFER_BACKBUFFER
                       ? GL_BACK : GL_FRONT );
 
         if ((dwBuffer & 0xFEU) == 0)
@@ -80,7 +80,7 @@ grLfbLock( GrLock_t dwType,
             // Reading pixels in one of the 565 modes is way slower than reading BGRA and converting to 565 later
             // This may change with new drivers/graphics hardware...
             // if anyone can show a faster way to read pixels, suggestions welcome :-)
-            glReadPixels( 0, 0,
+            DGL(glReadPixels)( 0, 0,
                           OpenGL.WindowWidth, OpenGL.WindowHeight,
                           GL_BGRA, GL_UNSIGNED_BYTE,
                           (void *)OpenGL.tmpBuf );
@@ -152,7 +152,7 @@ grLfbLock( GrLock_t dwType,
         }
         else
         {   /* AUX/DEPTH read-back */
-            glReadPixels( 0, 0,
+            DGL(glReadPixels)( 0, 0,
                           OpenGL.WindowWidth, OpenGL.WindowHeight,
                           GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT,
                           (void *)OpenGL.tmpBuf );
@@ -331,51 +331,51 @@ grLfbUnlock( GrLock_t dwType, GrBuffer_t dwBuffer )
             FxU32 ysize = maxy - miny;
 
             // Draw a textured quad
-            glPushAttrib( GL_COLOR_BUFFER_BIT|GL_TEXTURE_BIT|GL_DEPTH_BUFFER_BIT );
+            DGL(glPushAttrib)( GL_COLOR_BUFFER_BIT|GL_TEXTURE_BIT|GL_DEPTH_BUFFER_BIT );
 
-            glDisable( GL_BLEND );
-            glEnable( GL_TEXTURE_2D );
+            DGL(glDisable)( GL_BLEND );
+            DGL(glEnable)( GL_TEXTURE_2D );
 
             if ( Glide.DstBuffer.PixelPipeline )
-                glEnable( GL_SCISSOR_TEST );
+                DGL(glEnable)( GL_SCISSOR_TEST );
 
-            glAlphaFunc( GL_EQUAL, 0.0f );
-            glEnable( GL_ALPHA_TEST );
+            DGL(glAlphaFunc)( GL_EQUAL, 0.0f );
+            DGL(glEnable)( GL_ALPHA_TEST );
 
-            glDepthMask( GL_FALSE );
-            glDisable( GL_DEPTH_TEST );
+            DGL(glDepthMask)( GL_FALSE );
+            DGL(glDisable)( GL_DEPTH_TEST );
 
-            glBindTexture( GL_TEXTURE_2D, Glide.LFBTexture );
-            glTexSubImage2D( GL_TEXTURE_2D, 0, 0, 0, Glide.WindowWidth, ysize, GL_RGBA,
+            DGL(glBindTexture)( GL_TEXTURE_2D, Glide.LFBTexture );
+            DGL(glTexSubImage2D)( GL_TEXTURE_2D, 0, 0, 0, Glide.WindowWidth, ysize, GL_RGBA,
                 GL_UNSIGNED_BYTE, OpenGL.tmpBuf + ( miny * Glide.WindowWidth ) );
 
-            glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-            glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-            glDrawBuffer( Glide.DstBuffer.Buffer == GR_BUFFER_BACKBUFFER
+            DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+            DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+            DGL(glDrawBuffer)( Glide.DstBuffer.Buffer == GR_BUFFER_BACKBUFFER
                         ? GL_BACK : GL_FRONT );
 
-            glBegin( GL_QUADS );
-                glColor3f( 1.0f, 1.0f, 1.0f );
+            DGL(glBegin)( GL_QUADS );
+                DGL(glColor3f)( 1.0f, 1.0f, 1.0f );
 
-                glTexCoord2f( (float)minx/Glide.LFBTextureSize, 0.0f );
-                glVertex2f( (float)minx, (float)miny );
+                DGL(glTexCoord2f)( (float)minx/Glide.LFBTextureSize, 0.0f );
+                DGL(glVertex2f)( (float)minx, (float)miny );
 
-                glTexCoord2f((float)maxx/Glide.LFBTextureSize, 0.0f );
-                glVertex2f( (float)maxx, (float)miny );
+                DGL(glTexCoord2f)((float)maxx/Glide.LFBTextureSize, 0.0f );
+                DGL(glVertex2f)( (float)maxx, (float)miny );
 
-                glTexCoord2f( (float)maxx/Glide.LFBTextureSize, (float)ysize/Glide.LFBTextureSize );
-                glVertex2f( (float)maxx, (float)maxy );
+                DGL(glTexCoord2f)( (float)maxx/Glide.LFBTextureSize, (float)ysize/Glide.LFBTextureSize );
+                DGL(glVertex2f)( (float)maxx, (float)maxy );
 
-                glTexCoord2f( (float)minx/Glide.LFBTextureSize, (float)ysize/Glide.LFBTextureSize );
-                glVertex2f( (float)minx, (float)maxy );
-            glEnd( );
+                DGL(glTexCoord2f)( (float)minx/Glide.LFBTextureSize, (float)ysize/Glide.LFBTextureSize );
+                DGL(glVertex2f)( (float)minx, (float)maxy );
+            DGL(glEnd)( );
 
-            glPopAttrib( );
-            glDrawBuffer( OpenGL.RenderBuffer );
+            DGL(glPopAttrib)( );
+            DGL(glDrawBuffer)( OpenGL.RenderBuffer );
 
             if ( Glide.DstBuffer.Buffer != GR_BUFFER_BACKBUFFER )
             {
-                glFlush( );
+                DGL(glFlush)( );
             }
         }
 

@@ -402,19 +402,19 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     Glide.DstBuffer.Address = new FxU16[ Glide.WindowTotalPixels*2 ];
     Glide.LFBTextureSize = 2 << int_log2(Glide.WindowWidth > Glide.WindowHeight ? (Glide.WindowWidth-1) : (Glide.WindowHeight-1));
 
-    glGenTextures( 1, &Glide.LFBTexture );
-    glBindTexture( GL_TEXTURE_2D, Glide.LFBTexture );
+    DGL(glGenTextures)( 1, &Glide.LFBTexture );
+    DGL(glBindTexture)( GL_TEXTURE_2D, Glide.LFBTexture );
     if ( OpenGL.WindowTotalPixels != Glide.WindowTotalPixels ) {
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
     } else {
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
     }
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, Glide.LFBTextureSize, Glide.LFBTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
-    glBindTexture( GL_TEXTURE_2D, 0 );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
+    DGL(glTexImage2D)( GL_TEXTURE_2D, 0, GL_RGBA, Glide.LFBTextureSize, Glide.LFBTextureSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL );
+    DGL(glBindTexture)( GL_TEXTURE_2D, 0 );
 
     // Just checking
     if ( ( !Glide.SrcBuffer.Address ) || ( !Glide.DstBuffer.Address ) || ( !OpenGL.tmpBuf ) )
@@ -491,7 +491,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     GLErro( "grSstWinOpen" );
 #endif
 
-    glFinish( );
+    DGL(glFinish)( );
 
     // Show the splash screen? (code copied from the linux driver src)
     if (InternalConfig.NoSplash == false)
@@ -590,7 +590,7 @@ FX_ENTRY FxBool FX_CALL grSstWinClose( FxU32 ctx )
 
     FinaliseOpenGLWindow( );
 
-    glDeleteTextures(1, &Glide.LFBTexture);
+    DGL(glDeleteTextures)(1, &Glide.LFBTexture);
     delete[] Glide.SrcBuffer.Address;
     delete[] Glide.DstBuffer.Address;
     delete[] OpenGL.tmpBuf;
@@ -695,19 +695,19 @@ grSstOrigin( GrOriginLocation_t  origin )
     switch ( origin )
     {
     case GR_ORIGIN_LOWER_LEFT:
-        glMatrixMode( GL_PROJECTION );
-        glLoadIdentity( );
-        glOrtho( 0, Glide.WindowWidth, 0, Glide.WindowHeight, OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
-        glMatrixMode( GL_MODELVIEW );
+        DGL(glMatrixMode)( GL_PROJECTION );
+        DGL(glLoadIdentity)( );
+        DGL(glOrtho)( 0, Glide.WindowWidth, 0, Glide.WindowHeight, OpenGL.ZNear, OpenGL.ZFar );
+        DGL(glViewport)( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
+        DGL(glMatrixMode)( GL_MODELVIEW );
         break;
 
     case GR_ORIGIN_UPPER_LEFT:
-        glMatrixMode( GL_PROJECTION );
-        glLoadIdentity( );
-        glOrtho( 0, Glide.WindowWidth, Glide.WindowHeight, 0, OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
-        glMatrixMode( GL_MODELVIEW );
+        DGL(glMatrixMode)( GL_PROJECTION );
+        DGL(glLoadIdentity)( );
+        DGL(glOrtho)( 0, Glide.WindowWidth, Glide.WindowHeight, 0, OpenGL.ZNear, OpenGL.ZFar );
+        DGL(glViewport)( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
+        DGL(glMatrixMode)( GL_MODELVIEW );
         break;
     }
     grCullMode( Glide.State.CullMode );
@@ -862,8 +862,8 @@ grSstIdle( void )
     EnterGLThread();
 
     RenderDrawTriangles( );
-    glFlush( );
-    glFinish( );
+    DGL(glFlush)( );
+    DGL(glFinish)( );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grSstIdle" );

@@ -141,7 +141,7 @@ bool OGLIsExtensionSupported( const char * extension, int gl_version, int in_ver
         return false;
     }
 
-    extensions = (char*)glGetString( GL_EXTENSIONS );
+    extensions = (char*)DGL(glGetString)( GL_EXTENSIONS );
 
     start = extensions;
 
@@ -200,17 +200,17 @@ void ValidateUserConfig( void )
 	GlideMsg( OGL_LOG_SEPARATE );
 	GlideMsg( "** OpenGL Information **\n" );
 	GlideMsg( OGL_LOG_SEPARATE );
-	GlideMsg( "Vendor:      %s\n", glGetString( GL_VENDOR ) );
-	GlideMsg( "Renderer:    %s\n", glGetString( GL_RENDERER ) );
-	GlideMsg( "Version:     %s\n", glGetString( GL_VERSION ) );
-	GlideMsg( "Extensions:  %s\n", glGetString( GL_EXTENSIONS ) );
+	GlideMsg( "Vendor:      %s\n", DGL(glGetString)( GL_VENDOR ) );
+	GlideMsg( "Renderer:    %s\n", DGL(glGetString)( GL_RENDERER ) );
+	GlideMsg( "Version:     %s\n", DGL(glGetString)( GL_VERSION ) );
+	GlideMsg( "Extensions:  %s\n", DGL(glGetString)( GL_EXTENSIONS ) );
 
 	GlideMsg( OGL_LOG_SEPARATE );
 
 	int ver    = 0;
 	int subver = 0;
 
-	sscanf( (const char *)glGetString( GL_VERSION ), "%d.%d", &ver, &subver);
+	sscanf( (const char *)DGL(glGetString)( GL_VERSION ), "%d.%d", &ver, &subver);
 
 	InternalConfig.OGLVersion = OGL_VER(ver, subver); //ver * 100 + subver;
 
@@ -323,7 +323,7 @@ void GLExtensions( void )
 
     if ( InternalConfig.ARB_multitexture )
     {
-        glGetIntegerv( GL_MAX_TEXTURE_UNITS_ARB, &NumberOfTMUs );
+        DGL(glGetIntegerv)( GL_MAX_TEXTURE_UNITS_ARB, &NumberOfTMUs );
         GlideMsg( "MultiTexture Textures Units = %x\n", NumberOfTMUs );
 
         OpenGL.MultiTextureTMUs     = NumberOfTMUs;
@@ -357,7 +357,7 @@ void GLExtensions( void )
         }
         else
         {
-            glEnable( GL_COLOR_SUM_EXT );
+            DGL(glEnable)( GL_COLOR_SUM_EXT );
         }
     }
 
@@ -373,25 +373,25 @@ void GLExtensions( void )
         }
         else
         {
-            glFogi( GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT );
-            glFogi( GL_FOG_MODE, GL_LINEAR );
-            glFogf( GL_FOG_START, 0.0f );
-            glFogf( GL_FOG_END, 1.0f );
+            DGL(glFogi)( GL_FOG_COORDINATE_SOURCE_EXT, GL_FOG_COORDINATE_EXT );
+            DGL(glFogi)( GL_FOG_MODE, GL_LINEAR );
+            DGL(glFogf)( GL_FOG_START, 0.0f );
+            DGL(glFogf)( GL_FOG_END, 1.0f );
         }
     }
 
     if ( InternalConfig.EXT_vertex_array )
     {
-        glEnableClientState( GL_VERTEX_ARRAY );
-        glEnableClientState( GL_COLOR_ARRAY );
-        glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+        DGL(glEnableClientState)( GL_VERTEX_ARRAY );
+        DGL(glEnableClientState)( GL_COLOR_ARRAY );
+        DGL(glEnableClientState)( GL_TEXTURE_COORD_ARRAY );
         if ( InternalConfig.EXT_secondary_color )
         {
-            glEnableClientState( GL_SECONDARY_COLOR_ARRAY_EXT );
+            DGL(glEnableClientState)( GL_SECONDARY_COLOR_ARRAY_EXT );
         }
         if ( InternalConfig.EXT_fog_coord )
         {
-            glEnableClientState( GL_FOG_COORDINATE_ARRAY_EXT );
+            DGL(glEnableClientState)( GL_FOG_COORDINATE_ARRAY_EXT );
         }
 
         RenderUpdateArrays( );

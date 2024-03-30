@@ -323,4 +323,6 @@ int DetectMMX();
 
 void Glide3VertexUnpack(GrVertex *v, const void *ptr);
 
+#include "dyngl.h"
+
 #endif

@@ -96,7 +96,7 @@ VARARGDECL(void) Error( const char *szString, ... )
 
 void GLErro( const char *Funcao )
 {
-    GLenum Erro = glGetError( );
+    GLenum Erro = DGL(glGetError)( );
 
     if ( Erro != GL_NO_ERROR )
     {

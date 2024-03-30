@@ -124,7 +124,7 @@ else
     LDFLAGS += -flto=auto -pipe
   endif
 
-  GLIDE_LIBS  = -static -Lpthread9x pthread9x/crtfix.o -lpthread -lopengl32 -lgdi32
+  GLIDE_LIBS  = -static -Lpthread9x pthread9x/crtfix.o -lpthread -lgdi32
   GLIDE2_DEF = Glide2x.def
   GLIDE3_DEF = Glide3x.def
   
@@ -183,7 +183,8 @@ glide_SRC  := \
 	platform/windows/error.cpp \
 	platform/windows/library.cpp \
 	platform/windows/openglext.cpp \
-	platform/windows/window.cpp
+	platform/windows/window.cpp \
+	dyngl.c
 
 glide_OBJS := $(glide_SRC:.c=.c.g2$(OBJ))
 glide_OBJS := $(glide_OBJS:.cpp=.cpp.g2$(OBJ))

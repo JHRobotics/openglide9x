@@ -82,7 +82,7 @@ bool InitWindow( FxU hWnd )
         return false;
     }
 
-    if ( !strcmp( (char*)glGetString( GL_RENDERER ), "GDI Generic" ) )
+    if ( !strcmp( (char*)DGL(glGetString)( GL_RENDERER ), "GDI Generic" ) )
         ReportWarning("You are running in a Non-Accelerated OpenGL!!!\nThings can become really slow");
 
     ValidateUserConfig( );
@@ -128,25 +128,25 @@ bool InitWindow( FxU hWnd )
 //*************************************************
 void InitOpenGL( void )
 {
-    glShadeModel( GL_SMOOTH );
+    DGL(glShadeModel)( GL_SMOOTH );
 
     OpenGL.ZNear = ZBUFFERNEAR;
     OpenGL.ZFar = ZBUFFERFAR;
 
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity( );
-    glOrtho( 0, Glide.WindowWidth, 0, Glide.WindowHeight, OpenGL.ZNear, OpenGL.ZFar );
-    glViewport( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
+    DGL(glMatrixMode)( GL_PROJECTION );
+    DGL(glLoadIdentity)( );
+    DGL(glOrtho)( 0, Glide.WindowWidth, 0, Glide.WindowHeight, OpenGL.ZNear, OpenGL.ZFar );
+    DGL(glViewport)( 0, 0, OpenGL.WindowWidth, OpenGL.WindowHeight );
 
-    glMatrixMode( GL_MODELVIEW );
-    glLoadIdentity( );
+    DGL(glMatrixMode)( GL_MODELVIEW );
+    DGL(glLoadIdentity)( );
 
-    glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-//  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
-//  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND );
-//  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
-//  glTexEnvi( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+    DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+//  DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL );
+//  DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND );
+//  DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD );
+//  DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
 
-    glPixelStorei( GL_PACK_ALIGNMENT, 2);
-    glPixelStorei( GL_UNPACK_ALIGNMENT, 2);
+    DGL(glPixelStorei)( GL_PACK_ALIGNMENT, 2);
+    DGL(glPixelStorei)( GL_UNPACK_ALIGNMENT, 2);
 }

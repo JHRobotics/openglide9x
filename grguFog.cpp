@@ -78,7 +78,7 @@ grFogColorValue( GrColor_t fogcolor )
                    OpenGL.FogColor[ 1 ], 
                    OpenGL.FogColor[ 2 ], 
                    OpenGL.FogColor[ 3 ] );
-    glFogfv( GL_FOG_COLOR, &OpenGL.FogColor[0] );
+    DGL(glFogfv)( GL_FOG_COLOR, &OpenGL.FogColor[0] );
 
     LeaveGLThread();
 }
@@ -109,24 +109,24 @@ grFogMode( GrFogMode_t mode )
         OpenGL.Fog = true;
         if ( InternalConfig.EXT_fog_coord )
         {
-            glEnable( GL_FOG );
+            DGL(glEnable)( GL_FOG );
         }
     }
     else
     {
         OpenGL.Fog = false;
-        glDisable( GL_FOG );
+        DGL(glDisable)( GL_FOG );
     }
 
     switch ( modeAdd )
     {
     case GR_FOG_MULT2:
     case GR_FOG_ADD2:
-        glFogfv( GL_FOG_COLOR, &ZeroColor[ 0 ] );
+        DGL(glFogfv)( GL_FOG_COLOR, &ZeroColor[ 0 ] );
         break;
 
     default:
-        glFogfv( GL_FOG_COLOR, &OpenGL.FogColor[ 0 ] );
+        DGL(glFogfv)( GL_FOG_COLOR, &OpenGL.FogColor[ 0 ] );
         break;
     }
     

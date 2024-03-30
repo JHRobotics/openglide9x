@@ -129,17 +129,17 @@ void RenderFree( void )
 
 void RenderUpdateArrays( void )
 {
-    glVertexPointer( 3, GL_FLOAT, 4 * sizeof( GLfloat ), &OGLRender.TVertex[0] );
-    glColorPointer( 4, GL_FLOAT, 0, &OGLRender.TColor[0] );
+    DGL(glVertexPointer)( 3, GL_FLOAT, 4 * sizeof( GLfloat ), &OGLRender.TVertex[0] );
+    DGL(glColorPointer)( 4, GL_FLOAT, 0, &OGLRender.TColor[0] );
     if ( InternalConfig.ARB_multitexture )
     {
         p_glClientActiveTexture( GL_TEXTURE0_ARB );
     }
-    glTexCoordPointer( 4, GL_FLOAT, 0, &OGLRender.TTexture[0] );
+    DGL(glTexCoordPointer)( 4, GL_FLOAT, 0, &OGLRender.TTexture[0] );
     if ( InternalConfig.ARB_multitexture )
     {
         p_glClientActiveTexture( GL_TEXTURE1_ARB );
-        glTexCoordPointer( 4, GL_FLOAT, 0, &OGLRender.TTexture[0] );
+        DGL(glTexCoordPointer)( 4, GL_FLOAT, 0, &OGLRender.TTexture[0] );
     }
     p_glSecondaryColorPointerEXT( 3, GL_FLOAT, 4 * sizeof( GLfloat ), &OGLRender.TColor2[0] );
     if ( InternalConfig.EXT_fog_coord )
@@ -171,7 +171,7 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
 
     if ( OpenGL.Texture )
     {
-        glEnable( GL_TEXTURE_2D );
+        DGL(glEnable)( GL_TEXTURE_2D );
 
         use_two_tex = Textures->MakeReady( );
 
@@ -179,165 +179,165 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
         {
             p_glActiveTextureARB( GL_TEXTURE1_ARB );
 
-            glEnable( GL_TEXTURE_2D );
+            DGL(glEnable)( GL_TEXTURE_2D );
 
             p_glActiveTextureARB( GL_TEXTURE0_ARB );
         }
     }
     else
     {
-        glDisable( GL_TEXTURE_2D );
+        DGL(glDisable)( GL_TEXTURE_2D );
     }
 
     if ( OpenGL.Blend )
     {
-        glEnable( GL_BLEND );
+        DGL(glEnable)( GL_BLEND );
     }
     else
     {
-        glDisable( GL_BLEND );
+        DGL(glDisable)( GL_BLEND );
     }
 
     // Alpha Fix
     if ( Glide.State.AlphaOther != GR_COMBINE_OTHER_TEXTURE )
     {
-        glDisable( GL_ALPHA_TEST );
+        DGL(glDisable)( GL_ALPHA_TEST );
     }
     else 
     {
         if ( Glide.State.AlphaTestFunction != GR_CMP_ALWAYS )
         {
-            glEnable( GL_ALPHA_TEST );
+            DGL(glEnable)( GL_ALPHA_TEST );
         }
     }
     
     if( !OpenGL.Blend && Glide.State.ChromaKeyMode )
     {
-        glAlphaFunc( GL_GEQUAL, 0.5 );
-        glEnable( GL_ALPHA_TEST );
+        DGL(glAlphaFunc)( GL_GEQUAL, 0.5 );
+        DGL(glEnable)( GL_ALPHA_TEST );
         
-        glBegin( GL_TRIANGLES );
+        DGL(glBegin)( GL_TRIANGLES );
         for ( int i = 0; i < OGLRender.NumberOfTriangles; i++ )
         {
-            glColor3fv( &OGLRender.TColor[ i ].ar );
+            DGL(glColor3fv)( &OGLRender.TColor[ i ].ar );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
-            glTexCoord4fv( &OGLRender.TTexture[ i ].as );
-            glVertex3fv( &OGLRender.TVertex[ i ].ax );
+            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
+            DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
             
-            glColor3fv( &OGLRender.TColor[ i ].br );
+            DGL(glColor3fv)( &OGLRender.TColor[ i ].br );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
-            glTexCoord4fv( &OGLRender.TTexture[ i ].bs );
-            glVertex3fv( &OGLRender.TVertex[ i ].bx );
+            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
+            DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
             
-            glColor3fv( &OGLRender.TColor[ i ].cr );
+            DGL(glColor3fv)( &OGLRender.TColor[ i ].cr );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
-            glTexCoord4fv( &OGLRender.TTexture[ i ].cs );
-            glVertex3fv( &OGLRender.TVertex[ i ].cx );
+            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
+            DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
         }
-        glEnd( );
+        DGL(glEnd)( );
         
-        glDisable( GL_ALPHA_TEST );
+        DGL(glDisable)( GL_ALPHA_TEST );
     }
     else
     {
         if ( InternalConfig.EXT_vertex_array )
         {
-            glDrawArrays( GL_TRIANGLES, 0, OGLRender.NumberOfTriangles * 3 );
+            DGL(glDrawArrays)( GL_TRIANGLES, 0, OGLRender.NumberOfTriangles * 3 );
         }
         else
         {
-            glBegin( GL_TRIANGLES );
+            DGL(glBegin)( GL_TRIANGLES );
             for ( int i = 0; i < OGLRender.NumberOfTriangles; i++ )
             {
-                glColor4fv( &OGLRender.TColor[ i ].ar );
+                DGL(glColor4fv)( &OGLRender.TColor[ i ].ar );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
-                glTexCoord4fv( &OGLRender.TTexture[ i ].as );
+                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
                 if ( use_two_tex )
                 {
                     p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as );
                 }
-                glVertex3fv( &OGLRender.TVertex[ i ].ax );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
                 
-                glColor4fv( &OGLRender.TColor[ i ].br );
+                DGL(glColor4fv)( &OGLRender.TColor[ i ].br );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
-                glTexCoord4fv( &OGLRender.TTexture[ i ].bs );
+                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
                 if ( use_two_tex )
                 {
                     p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs );
                 }
-                glVertex3fv( &OGLRender.TVertex[ i ].bx );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
                 
-                glColor4fv( &OGLRender.TColor[ i ].cr );
+                DGL(glColor4fv)( &OGLRender.TColor[ i ].cr );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
-                glTexCoord4fv( &OGLRender.TTexture[ i ].cs );
+                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
                 if ( use_two_tex )
                 {
                     p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs );
                 }
-                glVertex3fv( &OGLRender.TVertex[ i ].cx );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
             }
-            glEnd( );
+            DGL(glEnd)( );
         }
     }
   
     if ( ! InternalConfig.EXT_secondary_color )
     {
-        glBlendFunc( GL_ONE, GL_ONE );
-        glEnable( GL_BLEND );
-        glDisable( GL_TEXTURE_2D );
+        DGL(glBlendFunc)( GL_ONE, GL_ONE );
+        DGL(glEnable)( GL_BLEND );
+        DGL(glDisable)( GL_TEXTURE_2D );
 
         if ( OpenGL.DepthBufferType )
         {
-            glPolygonOffset( 1.0f, 0.5f );
+            DGL(glPolygonOffset)( 1.0f, 0.5f );
         }
         else
         {
-            glPolygonOffset( -1.0f, -0.5f );
+            DGL(glPolygonOffset)( -1.0f, -0.5f );
         }
 
-        glEnable( GL_POLYGON_OFFSET_FILL );
+        DGL(glEnable)( GL_POLYGON_OFFSET_FILL );
 
         if (InternalConfig.EXT_vertex_array )
         {
-            glColorPointer( 4, GL_FLOAT, 0, &OGLRender.TColor2 );
-            glDrawArrays( GL_TRIANGLES, 0, OGLRender.NumberOfTriangles * 3 );
-            glColorPointer( 4, GL_FLOAT, 0, &OGLRender.TColor );
+            DGL(glColorPointer)( 4, GL_FLOAT, 0, &OGLRender.TColor2 );
+            DGL(glDrawArrays)( GL_TRIANGLES, 0, OGLRender.NumberOfTriangles * 3 );
+            DGL(glColorPointer)( 4, GL_FLOAT, 0, &OGLRender.TColor );
         }
         else
         {
-            glBegin( GL_TRIANGLES );
+            DGL(glBegin)( GL_TRIANGLES );
             for ( int i = 0; i < OGLRender.NumberOfTriangles; i++ )
             {
-                glColor4fv( &OGLRender.TColor2[ i ].ar );
-                glVertex3fv( &OGLRender.TVertex[ i ].ax );
+                DGL(glColor4fv)( &OGLRender.TColor2[ i ].ar );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
 
-                glColor4fv( &OGLRender.TColor2[ i ].br );
-                glVertex3fv( &OGLRender.TVertex[ i ].bx );
+                DGL(glColor4fv)( &OGLRender.TColor2[ i ].br );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
 
-                glColor4fv( &OGLRender.TColor2[ i ].cr );
-                glVertex3fv( &OGLRender.TVertex[ i ].cx );
+                DGL(glColor4fv)( &OGLRender.TColor2[ i ].cr );
+                DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
             }
-            glEnd( );
+            DGL(glEnd)( );
         }
 
         if ( Glide.State.DepthBiasLevel )
         {
-            glPolygonOffset( 1.0f, OpenGL.DepthBiasLevel );
+            DGL(glPolygonOffset)( 1.0f, OpenGL.DepthBiasLevel );
         }
         else
         {
-            glDisable( GL_POLYGON_OFFSET_FILL );
+            DGL(glDisable)( GL_POLYGON_OFFSET_FILL );
         }
 
         if ( OpenGL.Blend )
         {
-            glBlendFunc( OpenGL.SrcBlend, OpenGL.DstBlend );
+            DGL(glBlendFunc)( OpenGL.SrcBlend, OpenGL.DstBlend );
         }
     }
 
@@ -345,7 +345,7 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
     {
         p_glActiveTextureARB( GL_TEXTURE1_ARB );
 
-        glDisable( GL_TEXTURE_2D );
+        DGL(glDisable)( GL_TEXTURE_2D );
 
         p_glActiveTextureARB( GL_TEXTURE0_ARB );
     }
@@ -1228,50 +1228,50 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
 
     if ( OpenGL.Texture )
     {
-        glEnable( GL_TEXTURE_2D );
+        DGL(glEnable)( GL_TEXTURE_2D );
 
         Textures->MakeReady( );
     }
     else
     {
-        glDisable( GL_TEXTURE_2D );
+        DGL(glDisable)( GL_TEXTURE_2D );
     }
 
     if ( OpenGL.Blend )
     {
-        glEnable( GL_BLEND );
+        DGL(glEnable)( GL_BLEND );
     }
     else
     {
-        glDisable( GL_BLEND );
+        DGL(glDisable)( GL_BLEND );
     }
 
     // Alpha Fix
     if ( Glide.State.AlphaOther != GR_COMBINE_OTHER_TEXTURE )
     {
-        glDisable( GL_ALPHA_TEST );
+        DGL(glDisable)( GL_ALPHA_TEST );
     }
     else 
     {
         if ( Glide.State.AlphaTestFunction != GR_CMP_ALWAYS )
         {
-            glEnable( GL_ALPHA_TEST );
+            DGL(glEnable)( GL_ALPHA_TEST );
         }
     }
     
-    glBegin( GL_LINES );
-        glColor4fv( &pC->ar );
+    DGL(glBegin)( GL_LINES );
+        DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
-        glTexCoord4fv( &pTS->as );
+        DGL(glTexCoord4fv)( &pTS->as );
         p_glFogCoordfEXT( pF->af );
-        glVertex3fv( &pV->ax );
+        DGL(glVertex3fv)( &pV->ax );
 
-        glColor4fv( &pC->br );
+        DGL(glColor4fv)( &pC->br );
         p_glSecondaryColor3fvEXT( &pC2->br );
-        glTexCoord4fv( &pTS->bs );
+        DGL(glTexCoord4fv)( &pTS->bs );
         p_glFogCoordfEXT( pF->bf );
-        glVertex3fv( &pV->bx );
-    glEnd();
+        DGL(glVertex3fv)( &pV->bx );
+    DGL(glEnd)();
 
 #ifdef OPENGL_DEBUG
     GLErro( "Render::AddLine" );
@@ -1608,44 +1608,44 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
 
     if ( OpenGL.Texture )
     {
-        glEnable( GL_TEXTURE_2D );
+        DGL(glEnable)( GL_TEXTURE_2D );
 
         Textures->MakeReady( );
     }
     else
     {
-        glDisable( GL_TEXTURE_2D );
+        DGL(glDisable)( GL_TEXTURE_2D );
     }
 
     if ( OpenGL.Blend )
     {
-        glEnable( GL_BLEND );
+        DGL(glEnable)( GL_BLEND );
     }
     else
     {
-        glDisable( GL_BLEND );
+        DGL(glDisable)( GL_BLEND );
     }
 
     // Alpha Fix
     if ( Glide.State.AlphaOther != GR_COMBINE_OTHER_TEXTURE )
     {
-        glDisable( GL_ALPHA_TEST );
+        DGL(glDisable)( GL_ALPHA_TEST );
     }
     else 
     {
         if ( Glide.State.AlphaTestFunction != GR_CMP_ALWAYS )
         {
-            glEnable( GL_ALPHA_TEST );
+            DGL(glEnable)( GL_ALPHA_TEST );
         }
     }
     
-    glBegin( GL_POINTS );
-        glColor4fv( &pC->ar );
+    DGL(glBegin)( GL_POINTS );
+        DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
-        glTexCoord4fv( &pTS->as );
+        DGL(glTexCoord4fv)( &pTS->as );
         p_glFogCoordfEXT( pF->af );
-        glVertex3fv( &pV->ax );
-    glEnd();
+        DGL(glVertex3fv)( &pV->ax );
+    DGL(glEnd)();
 
 #ifdef OPENGL_DEBUG
     GLErro( "Render::AddPoint" );

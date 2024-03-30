@@ -47,34 +47,34 @@ grCullMode( GrCullMode_t mode )
     switch ( Glide.State.CullMode )
     {
     case GR_CULL_DISABLE:
-        glDisable( GL_CULL_FACE );
-        glCullFace( GL_BACK );  // This will be called in initialization
+        DGL(glDisable)( GL_CULL_FACE );
+        DGL(glCullFace)( GL_BACK );  // This will be called in initialization
         break;
 
     case GR_CULL_NEGATIVE:
-        glEnable( GL_CULL_FACE );
+        DGL(glEnable)( GL_CULL_FACE );
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
-            glFrontFace( GL_CCW );
+            DGL(glFrontFace)( GL_CCW );
             //GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         else
         {
-            glFrontFace( GL_CW );
+            DGL(glFrontFace)( GL_CW );
             //GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         break;
 
     case GR_CULL_POSITIVE:
-        glEnable( GL_CULL_FACE );
+        DGL(glEnable)( GL_CULL_FACE );
         if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
         {
-            glFrontFace( GL_CW );
+            DGL(glFrontFace)( GL_CW );
             //GlideMsg( "grCullMode( %d ): GL_CW\n", mode );
         }
         else
         {
-            glFrontFace( GL_CCW );
+            DGL(glFrontFace)( GL_CCW );
             //GlideMsg( "grCullMode( %d ): GL_CCW\n", mode );
         }
         break;
@@ -123,37 +123,37 @@ grClipWindow( FxU32 minx, FxU32 miny, FxU32 maxx, FxU32 maxy )
         OpenGL.Clipping = false;
     }
 
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity();
+    DGL(glMatrixMode)( GL_PROJECTION );
+    DGL(glLoadIdentity)();
 
     if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
     {
-        glOrtho( Glide.State.ClipMinX, Glide.State.ClipMaxX,
+        DGL(glOrtho)( Glide.State.ClipMinX, Glide.State.ClipMaxX,
                  Glide.State.ClipMinY, Glide.State.ClipMaxY,
                  OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( OpenGL.ClipMinX, OpenGL.ClipMinY,
+        DGL(glViewport)( OpenGL.ClipMinX, OpenGL.ClipMinY,
                     OpenGL.ClipMaxX - OpenGL.ClipMinX,
                     OpenGL.ClipMaxY - OpenGL.ClipMinY );
         // Used for the buffer clearing
-        glScissor( OpenGL.ClipMinX, OpenGL.ClipMinY,
+        DGL(glScissor)( OpenGL.ClipMinX, OpenGL.ClipMinY,
                    OpenGL.ClipMaxX - OpenGL.ClipMinX,
                    OpenGL.ClipMaxY - OpenGL.ClipMinY );
     }
     else
     {
-        glOrtho( Glide.State.ClipMinX, Glide.State.ClipMaxX,
+        DGL(glOrtho)( Glide.State.ClipMinX, Glide.State.ClipMaxX,
                  Glide.State.ClipMaxY, Glide.State.ClipMinY,
                  OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
+        DGL(glViewport)( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
                     OpenGL.ClipMaxX - OpenGL.ClipMinX,
                     OpenGL.ClipMaxY - OpenGL.ClipMinY );
         // Used for the buffer clearing
-        glScissor( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
+        DGL(glScissor)( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
                    OpenGL.ClipMaxX - OpenGL.ClipMinX,
                    OpenGL.ClipMaxY - OpenGL.ClipMinY );
     }
 
-    glMatrixMode( GL_MODELVIEW );
+    DGL(glMatrixMode)( GL_MODELVIEW );
 
     LeaveGLThread();
 }
@@ -555,7 +555,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 		case GR_TRIANGLE_STRIP:
@@ -595,7 +595,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER && contindex >= 2)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 		case GR_POLYGON:
@@ -632,7 +632,7 @@ FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointe
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER && contindex >= 2)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 	}
@@ -699,7 +699,7 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 		case GR_TRIANGLE_STRIP:
@@ -729,7 +729,7 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 		case GR_POLYGON: /* See: grDrawVertexArray */
@@ -757,7 +757,7 @@ FX_ENTRY void FX_CALL grDrawVertexArrayContiguous ( FxU32 mode, FxU32 count, voi
 			if(Glide.State.RenderBuffer == GR_BUFFER_FRONTBUFFER)
 			{
 				RenderDrawTriangles();
-				glFlush();
+				DGL(glFlush)();
 			}
 			break;
 	}
@@ -771,8 +771,8 @@ FX_ENTRY void FX_CALL grFlush ( void )
   EnterGLThread();
     
 	RenderDrawTriangles();
-	glFlush();
-	glFinish();
+	DGL(glFlush)();
+	DGL(glFinish)();
 
   LeaveGLThread();
 }

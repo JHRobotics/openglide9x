@@ -38,7 +38,7 @@ grDepthBufferMode( GrDepthBufferMode_t mode )
     {
     case GR_DEPTHBUFFER_DISABLE:
         OpenGL.DepthBufferType = 0;
-        glDisable( GL_DEPTH_TEST );
+        DGL(glDisable)( GL_DEPTH_TEST );
         return;
 
     case GR_DEPTHBUFFER_ZBUFFER:
@@ -56,31 +56,31 @@ grDepthBufferMode( GrDepthBufferMode_t mode )
         break;
     }
 
-    glEnable( GL_DEPTH_TEST );
+    DGL(glEnable)( GL_DEPTH_TEST );
 
-    glMatrixMode( GL_PROJECTION );
-    glLoadIdentity( );
+    DGL(glMatrixMode)( GL_PROJECTION );
+    DGL(glLoadIdentity)( );
 
     if ( Glide.State.OriginInformation == GR_ORIGIN_LOWER_LEFT )
     {
-        glOrtho( Glide.State.ClipMinX, Glide.State.ClipMaxX,
+        DGL(glOrtho)( Glide.State.ClipMinX, Glide.State.ClipMaxX,
                  Glide.State.ClipMinY, Glide.State.ClipMaxY,
                  OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( OpenGL.ClipMinX, OpenGL.ClipMinY,
+        DGL(glViewport)( OpenGL.ClipMinX, OpenGL.ClipMinY,
                     OpenGL.ClipMaxX - OpenGL.ClipMinX,
                     OpenGL.ClipMaxY - OpenGL.ClipMinY );
     }
     else
     {
-        glOrtho( Glide.State.ClipMinX, Glide.State.ClipMaxX, 
+        DGL(glOrtho)( Glide.State.ClipMinX, Glide.State.ClipMaxX, 
                  Glide.State.ClipMaxY, Glide.State.ClipMinY, 
                  OpenGL.ZNear, OpenGL.ZFar );
-        glViewport( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
+        DGL(glViewport)( OpenGL.ClipMinX, OpenGL.WindowHeight - OpenGL.ClipMaxY,
                     OpenGL.ClipMaxX - OpenGL.ClipMinX,
                     OpenGL.ClipMaxY - OpenGL.ClipMinY );
     }
 
-    glMatrixMode( GL_MODELVIEW );
+    DGL(glMatrixMode)( GL_MODELVIEW );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthBufferMode" );
@@ -103,7 +103,7 @@ grDepthMask( FxBool enable )
 
     Glide.State.DepthBufferWritting = OpenGL.DepthBufferWritting = enable;
 
-    glDepthMask( OpenGL.DepthBufferWritting );
+    DGL(glDepthMask)( OpenGL.DepthBufferWritting );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthMask" );
@@ -130,7 +130,7 @@ grDepthBufferFunction( GrCmpFnc_t func )
     // To port it to anything else than OpenGL we NEED to change this code
     OpenGL.DepthFunction = GL_NEVER + func;
 
-    glDepthFunc( OpenGL.DepthFunction );
+    DGL(glDepthFunc)( OpenGL.DepthFunction );
 
 #ifdef OPENGL_DEBUG
     GLErro( "grDepthBufferFunction" );
@@ -167,15 +167,15 @@ FX_ENTRY void FX_CALL grDepthBiasLevel( FxI32 level )
     	//OpenGL.DepthBiasLevel = level;
     }
 
-    glPolygonOffset( 1.0f, OpenGL.DepthBiasLevel );
+    DGL(glPolygonOffset)( 1.0f, OpenGL.DepthBiasLevel );
 
     if ( level != 0 )
     {
-        glEnable( GL_POLYGON_OFFSET_FILL );
+        DGL(glEnable)( GL_POLYGON_OFFSET_FILL );
     }
     else
     {
-        glDisable( GL_POLYGON_OFFSET_FILL );
+        DGL(glDisable)( GL_POLYGON_OFFSET_FILL );
     }
 
 #ifdef OPENGL_DEBUG

@@ -571,7 +571,7 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
 
     if ( InternalConfig.EXT_texture_lod_bias )
     {
-        glTexEnvf( GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, bias );
+        DGL(glTexEnvf)( GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, bias );
     }
 
     LeaveGLThread();
