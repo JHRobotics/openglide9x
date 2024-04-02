@@ -96,6 +96,8 @@ grGlideInit( void )
 #ifdef OGL_DONE
     GlideMsg( "grGlideInit( )\n" );
 #endif
+		dyngl_load();
+
     EnterGLThread();
 
     if ( OpenGL.GlideInit )
@@ -298,6 +300,56 @@ grSstQueryBoards( GrHwConfiguration *hwConfig )
 //*************************************************
 void VXLInit();
 
+static void grDefaults(GrOriginLocation_t org_loc)
+{
+    // All should be disabled
+    //depth buffering, fog, chroma-key, alpha blending, alpha testing
+    grSstOrigin( org_loc );
+    grTexClampMode( 0, GR_TEXTURECLAMP_WRAP, GR_TEXTURECLAMP_WRAP );
+    grTexMipMapMode( 0, GR_MIPMAP_DISABLE, FXFALSE );
+    grTexFilterMode( 0, GR_TEXTUREFILTER_BILINEAR, GR_TEXTUREFILTER_BILINEAR );
+    grChromakeyMode( GR_CHROMAKEY_DISABLE );
+    grFogMode( GR_FOG_DISABLE );
+    grCullMode( GR_CULL_DISABLE );
+    grRenderBuffer( GR_BUFFER_BACKBUFFER );
+    grAlphaTestFunction( GR_CMP_ALWAYS );
+    grDitherMode( GR_DITHER_4x4 );
+    grColorCombine( GR_COMBINE_FUNCTION_SCALE_OTHER,
+                    GR_COMBINE_FACTOR_ONE,
+                    GR_COMBINE_LOCAL_ITERATED,
+                    GR_COMBINE_OTHER_ITERATED,
+                    FXFALSE );
+    grAlphaCombine( GR_COMBINE_FUNCTION_SCALE_OTHER,
+                    GR_COMBINE_FACTOR_ONE,
+                    GR_COMBINE_LOCAL_NONE,
+                    GR_COMBINE_OTHER_CONSTANT,
+                    FXFALSE );
+    grTexCombine( GR_TMU0,GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE,
+                GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE, FXFALSE, FXFALSE );
+    grAlphaControlsITRGBLighting( FXFALSE );
+    grAlphaBlendFunction( GR_BLEND_ONE, GR_BLEND_ZERO, GR_BLEND_ONE, GR_BLEND_ZERO );
+    grColorMask( FXTRUE, FXFALSE );
+    grDepthMask( FXFALSE );
+    grDepthBufferMode( GR_DEPTHBUFFER_DISABLE );
+    grDepthBufferFunction( GR_CMP_LESS );
+
+    //(chroma-key value, alpha test reference, constant depth value,
+    //constant alpha value, etc.) and pixel rendering statistic counters 
+    //are initialized to 0x00.
+    grChromakeyValue( 0x00 );
+    grAlphaTestReferenceValue( 0x00 );
+    grDepthBiasLevel( 0x00 );
+    grFogColorValue( 0x00 );
+    grConstantColorValue( 0xFFFFFFFF );
+    grClipWindow( 0, 0, Glide.WindowWidth, Glide.WindowHeight );
+//  grGammaCorrectionValue( 1.6f );
+#ifndef GLIDE3
+    grHints( GR_HINT_STWHINT, 0 );
+#else
+    Glide.State.STWHint = 0;
+#endif
+}
+
 #ifndef GLIDE3
 FX_ENTRY FxBool FX_CALL
 grSstWinOpen(   FxU hwnd,
@@ -318,6 +370,7 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #endif
 
 {
+		static BOOL splashPlayed = FALSE;
 	  EnterGLThread();
 	  
     if ( OpenGL.WinOpen )
@@ -434,52 +487,8 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
 #ifdef OGL_DONE
     GlideMsg( "----Start of grSstWinOpen()\n" );
 #endif
-    // All should be disabled
-    //depth buffering, fog, chroma-key, alpha blending, alpha testing
-    grSstOrigin( org_loc );
-    grTexClampMode( 0, GR_TEXTURECLAMP_WRAP, GR_TEXTURECLAMP_WRAP );
-    grTexMipMapMode( 0, GR_MIPMAP_DISABLE, FXFALSE );
-    grTexFilterMode( 0, GR_TEXTUREFILTER_BILINEAR, GR_TEXTUREFILTER_BILINEAR );
-    grChromakeyMode( GR_CHROMAKEY_DISABLE );
-    grFogMode( GR_FOG_DISABLE );
-    grCullMode( GR_CULL_DISABLE );
-    grRenderBuffer( GR_BUFFER_BACKBUFFER );
-    grAlphaTestFunction( GR_CMP_ALWAYS );
-    grDitherMode( GR_DITHER_4x4 );
-    grColorCombine( GR_COMBINE_FUNCTION_SCALE_OTHER,
-                    GR_COMBINE_FACTOR_ONE,
-                    GR_COMBINE_LOCAL_ITERATED,
-                    GR_COMBINE_OTHER_ITERATED,
-                    FXFALSE );
-    grAlphaCombine( GR_COMBINE_FUNCTION_SCALE_OTHER,
-                    GR_COMBINE_FACTOR_ONE,
-                    GR_COMBINE_LOCAL_NONE,
-                    GR_COMBINE_OTHER_CONSTANT,
-                    FXFALSE );
-    grTexCombine( GR_TMU0,GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE,
-                GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE, FXFALSE, FXFALSE );
-    grAlphaControlsITRGBLighting( FXFALSE );
-    grAlphaBlendFunction( GR_BLEND_ONE, GR_BLEND_ZERO, GR_BLEND_ONE, GR_BLEND_ZERO );
-    grColorMask( FXTRUE, FXFALSE );
-    grDepthMask( FXFALSE );
-    grDepthBufferMode( GR_DEPTHBUFFER_DISABLE );
-    grDepthBufferFunction( GR_CMP_LESS );
 
-    //(chroma-key value, alpha test reference, constant depth value,
-    //constant alpha value, etc.) and pixel rendering statistic counters 
-    //are initialized to 0x00.
-    grChromakeyValue( 0x00 );
-    grAlphaTestReferenceValue( 0x00 );
-    grDepthBiasLevel( 0x00 );
-    grFogColorValue( 0x00 );
-    grConstantColorValue( 0xFFFFFFFF );
-    grClipWindow( 0, 0, Glide.WindowWidth, Glide.WindowHeight );
-//  grGammaCorrectionValue( 1.6f );
-#ifndef GLIDE3
-    grHints( GR_HINT_STWHINT, 0 );
-#else
-    Glide.State.STWHint = 0;
-#endif
+    grDefaults(org_loc);
 
 #ifdef OGL_DONE
     GlideMsg( "----End of grSstWinOpen()\n" );
@@ -494,27 +503,40 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     DGL(glFinish)( );
 
     // Show the splash screen? (code copied from the linux driver src)
-    if (InternalConfig.NoSplash == false)
+    if(!splashPlayed)
     {
-        grSplash(0.0f, 0.0f, 
-            static_cast<float>(Glide.WindowWidth),
-            static_cast<float>(Glide.WindowHeight),
-            0);
-        // The splash screen is displayed once, and because the
-        // internal config is reinitialised each time grWinOpen()
-        // is called, the value must be reset in the user config
-        InternalConfig.NoSplash = true;
+	    if (InternalConfig.NoSplash != 1)
+	    {
+	    	BOOL splash_rc = FALSE;
+	    	
+    		splash_rc = ExternalSplash();
+
+	    	if(!splash_rc && InternalConfig.NoSplash == 0)
+	    	{
+	        grSplash(0.0f, 0.0f, 
+	            static_cast<float>(Glide.WindowWidth),
+	            static_cast<float>(Glide.WindowHeight),
+	            0);
+	        // The splash screen is displayed once, and because the
+	        // internal config is reinitialised each time grWinOpen()
+	        // is called, the value must be reset in the user config
+	      }
+	    }
+    	splashPlayed = TRUE;
+    	grDefaults(org_loc);
     }
 
 #ifndef GLIDE3
-    return FXTRUE;
+    LeaveGLThread();
+		return FXTRUE;
 #else
     VXLInit();
     grViewport(0, 0, Glide.WindowWidth, Glide.WindowHeight);
 
+		LeaveGLThread();
+
 		return 1;
 #endif
-    LeaveGLThread();
 }
 
 //*************************************************

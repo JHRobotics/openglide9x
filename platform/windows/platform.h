@@ -60,4 +60,6 @@ void ResetGLThread();
 
 int GetVRetrace();
 
+BOOL ExternalSplash();
+
 #endif // WIN32

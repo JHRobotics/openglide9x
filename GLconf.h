@@ -29,8 +29,8 @@ OGL_CFG_FLOAT(Resolution,          0,   0,   16, "Scale screen, 0 = 1 = disabled
 OGL_CFG_INT(TextureMemorySize,     8,   2,   32, "Texture memory size in MB, from 2 to 32")
 OGL_CFG_INT(FrameBufferMemorySize, 8,   2,   16, "Frame buffer size in MB, from 2 to 16")
 OGL_CFG_INT(Priority,              2,   0,    5, "0 = highest, 5 = lowest")
-OGL_CFG_INT(HideCursor,            1,   0,    2, "Try to suppress flashing cursor, 0 = disable, 1 = hide by thread, 2 = disable is whole system, when GLIDE active")
-OGL_CFG_BOOL(NoSplash,                     true, "Disable 3DFX splash screen")
+OGL_CFG_INT(HideCursor,            1,   0,    2, "Try to suppress flashing cursor, 0 = disable, 1 = hide by thread, 2 = disable in whole system, when GLIDE active")
+OGL_CFG_INT(NoSplash,              2,   0,    2, "3DFX splash screen is 0 = enable, 1 = disabled, 2 = orignal controled by FX_GLIDE_NO_SPLASH or disabled")
 OGL_CFG_BOOL(ShamelessPlug,               false, "")
 
 #ifndef DEBUG
@@ -41,3 +41,4 @@ OGL_CFG_BOOL(Logging,                     true, "")
 
 OGL_CFG_INT(NumTMU,                1,   1,    GLIDE_NUM_TMU, "Number of texture mapping units (TMU), 1 = most compatible")
 OGL_CFG_INT(SSTType,              -1,  -1,    4, "Type of Voodoo board: -1 = auto, 0 = Voodoo, 1 = Rush, 3 = Voodoo2, 4 = Banshee")
+OGL_CFG_BOOL(Disabled,                    false, "Deny load, ideal, if you want ship 3dfx OpenGL and continue to normal OpenGL")

@@ -32,12 +32,50 @@ HINSTANCE glideDLLInt = NULL;
 static DEVMODEA savedMode;
 static BOOL saveModeUsable = FALSE;
 
+/*
+ * EnumDisplaySettingsA(NULL, ENUM_CURRENT_SETTINGS, ...) not working on W95,
+ * so we use this replacement
+ */
+static BOOL EnumDisplayCurrent(DEVMODEA *lpDevMode)
+{
+	HWND hDesktop = GetDesktopWindow();
+	HDC hdc = GetDC(hDesktop);
+	if(hdc)
+	{
+		lpDevMode->dmBitsPerPel = GetDeviceCaps(hdc, PLANES) * GetDeviceCaps(hdc, BITSPIXEL);
+		lpDevMode->dmPelsWidth  = GetDeviceCaps(hdc, HORZRES);
+		lpDevMode->dmPelsHeight = GetDeviceCaps(hdc, VERTRES);
+		lpDevMode->dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
 static void desktopSave()
 {
+	saveModeUsable = FALSE;
+	
 	memset(&savedMode, 0, sizeof(DEVMODEA));
 	savedMode.dmSize = sizeof(DEVMODEA);
 	
-	saveModeUsable = EnumDisplaySettingsA(NULL, ENUM_REGISTRY_SETTINGS, &savedMode);
+	DEVMODEA curmode;
+	memset(&curmode, 0, sizeof(DEVMODEA));
+	curmode.dmSize = sizeof(DEVMODEA);
+	
+	if(EnumDisplaySettingsA(NULL, ENUM_REGISTRY_SETTINGS, &savedMode))
+	{
+		if(EnumDisplayCurrent(&curmode))
+		{
+			if(savedMode.dmBitsPerPel == curmode.dmBitsPerPel &&
+			   savedMode.dmPelsWidth  == curmode.dmPelsWidth &&
+			   savedMode.dmPelsHeight	== curmode.dmPelsHeight)
+			{
+				saveModeUsable = TRUE;
+			}
+		}
+	}
 }
 
 static void desktopRestore()
@@ -45,7 +83,7 @@ static void desktopRestore()
 	if(saveModeUsable)
 	{
 		savedMode.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-		ChangeDisplaySettingsA(&savedMode, CDS_FULLSCREEN | CDS_RESET);
+		ChangeDisplaySettingsA(&savedMode, CDS_FULLSCREEN);
 	}
 }
 
@@ -69,6 +107,7 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
 #endif
         desktopSave();
         dyngl_init(hinstDLL);
+        
         if ( !ClearAndGenerateLogFile( ) )
         {
             return FALSE;
@@ -88,6 +127,11 @@ BOOL WINAPI DllMain( HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvreserved )
         if(hDefault) CopyCursor(hDefault);
         
         InitMainVariables( );
+        
+        if(UserConfig.Disabled)
+        {
+        	return FALSE; /* deny load */
+        }
 
         if ( SetPriorityClass( GetCurrentProcess( ), NORMAL_PRIORITY_CLASS ) == 0 )
         {

@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <stdio.h>
 #include "dyngl.h"
 
 dyngl_t dyngl;
@@ -32,7 +33,6 @@ void dyngl_destroy()
 #define DGL_ITEM(_ret, _call, _name, _args) \
 	dyngl._name = (dyngl_f_ ## _name)GetProcAddress(dyngl.lib, #_name); \
 	if(dyngl._name == NULL){return FALSE;}
-	
 
 BOOL dyngl_load()
 {
@@ -42,13 +42,38 @@ BOOL dyngl_load()
 		return TRUE;
 	}
 	
-	dyngl.lib = LoadLibraryA("opengl32.dll");
-	
-	if(dyngl.lib == dyngl.thislib) /* we load self */
+	/*
+		OK, this is a bit thought, some game used wrapper named "opengl32.dll" which
+		call this (glide2x.dll/glide3x.dll) and we cannot load "opengl32.dll",
+		because this creates loop. This is usually also using load-time dynamic
+		linking so we cannot determine call path. Conclusion: try load openg32.dll
+		in same directory as this DLL, when not exists, load openg32 from system dir.
+	 */
+	if(GetModuleFileNameA(dyngl.thislib, path, PATH_MAX) != 0)
 	{
-		FreeLibrary(dyngl.lib);
-		dyngl.lib = NULL;
+		char *pstop;
+		char *ptr1 = strrchr(path, '\\');
+		char *ptr2 = strrchr(path, '/');
 		
+		if(ptr1 != NULL && ptr2 != NULL)
+		{
+			pstop = ptr1 > ptr2 ? ptr1 : ptr2;
+			if(strlen(pstop + sizeof("\\opengl32.dll")) < PATH_MAX)
+			{
+				strcpy(pstop+1, "opengl32.dll");
+				
+				dyngl.lib = LoadLibraryA(path);
+				if(dyngl.lib == dyngl.thislib) /* we load self */
+				{
+					FreeLibrary(dyngl.lib);
+					dyngl.lib = NULL;
+				}
+			}
+		}
+	}
+	
+	if(dyngl.lib == NULL)
+	{
 		if(GetSystemDirectoryA(path, PATH_MAX))
 		{
 			strcat(path, "\\opengl32.dll");
@@ -60,8 +85,6 @@ BOOL dyngl_load()
 				return FALSE;
 			}
 		}
-		
-		return FALSE;
 	}
 	
 	if(dyngl.lib == NULL)

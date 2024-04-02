@@ -375,7 +375,7 @@ void Convert1555to8888(FxU16 *in, FxU32 *out, int pixels)
 
 void Convert4444to8888(FxU16 *in, FxU32 *out, int pixels)
 {
-	for(; pixels >= 4; pixels -= 4)
+	for(; pixels >= 2; pixels -= 2)
 	{
 		v2us vs = *((v2us*)in);
 		v2ui v = __builtin_convertvector(vs, v2ui);
@@ -390,8 +390,8 @@ void Convert4444to8888(FxU16 *in, FxU32 *out, int pixels)
 
 		*((v2ui*)out) = vo;
 		
-		in += 4;
-		out += 4;
+		in += 2;
+		out += 2;
 	}
 	
 	for(; pixels > 0; pixels--)

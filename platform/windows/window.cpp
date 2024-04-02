@@ -502,4 +502,56 @@ int GetVRetrace()
 	}
 }
 
+typedef FxBool (FX_CALL *fxSplashInit_f)(FxU32 hWnd, FxU32 screenWidth,
+	FxU32 screenHeight, FxU32 numColBuf, FxU32 numAuxBuf, GrColorFormat_t colorFormat);
+
+typedef void (FX_CALL *fxSplash_f)(float x, float y, float w, float h, FxU32 frameNumber);
+typedef void (FX_CALL *fxSplashShutdown_f)(void);
+
+#ifdef GLIDE3
+# define SPLASH_DLL "3dfxSpl3.dll"
+#else
+# define SPLASH_DLL "3dfxSpl2.dll"
+#endif
+
+BOOL ExternalSplash()
+{
+	HMODULE splashdll = LoadLibraryA(SPLASH_DLL);
+	BOOL rc = FALSE;
+	
+	if(splashdll != NULL)
+	{
+		fxSplashInit_f fxSplashInit_p = (fxSplashInit_f)GetProcAddress(splashdll, "_fxSplashInit@24");
+		fxSplash_f fxSplash_p = (fxSplash_f)GetProcAddress(splashdll, "_fxSplash@20");
+		fxSplashShutdown_f fxSplashShutdown_p = (fxSplashShutdown_f)GetProcAddress(splashdll, "_fxSplashShutdown@0");
+		
+		if(fxSplashInit_p != NULL && fxSplash_p != NULL)
+		{
+			const char *ev = getenv("FX_GLIDE_NO_SPLASH");
+			if(ev != NULL && atoi(ev) > 0)
+			{
+				/* skip play */
+				rc = TRUE;
+			}
+			else
+			{
+				if(fxSplashInit_p(0, (float)Glide.WindowWidth, (float)Glide.WindowHeight, 2, 1, GR_COLORFORMAT_ABGR))
+				{
+					fxSplash_p(0, 0, (float)Glide.WindowWidth, (float)Glide.WindowHeight, 0);
+				
+					if(fxSplashShutdown_p != NULL)
+					{
+						fxSplashShutdown_p();
+					}
+					rc = TRUE;
+				}
+			}
+		}
+		
+		FreeLibrary(splashdll);
+	}
+	
+	return rc;
+}
+
 #endif // !C_USE_SDL && WIN32
