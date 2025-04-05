@@ -197,7 +197,7 @@ static GrTexTable_t texTableType( GrTextureFormat_t format ) {
 
 static void downloadTexture( Texture *texture, Gu3dfInfo *info ) {
   texture->info.data        = info->data;
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
   texture->info.smallLod    = info->header.small_lod;
   texture->info.largeLod    = info->header.large_lod;
   texture->info.aspectRatio = info->header.aspect_ratio;

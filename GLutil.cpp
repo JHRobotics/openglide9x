@@ -273,7 +273,7 @@ FxU32 GetTexSize( const int Lod, const int aspectRatio, const int format )
     ** GR_TEXFMT_P_8
     ** Reduces the size by 2
     */
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ aspectRatio ][ Lod ];
 #else
 		return nSquareLod[ format > GR_TEXFMT_RSVD1 ? 1 : 0 ][ 3 - aspectRatio ][ 8 - Lod ];

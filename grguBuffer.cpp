@@ -24,7 +24,7 @@ void ConvertColorF( GrColor_t GlideColor, float &R, float &G, float &B, float &A
 //*************************************************
 //* Clear all the Buffers
 //*************************************************
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 grBufferClear( GrColor_t color, GrAlpha_t alpha, FxU16 depth )
 #else

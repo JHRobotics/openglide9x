@@ -62,7 +62,7 @@
 extern "C" {
 #endif
 
-#if defined(GLIDE3) && defined(GLIDE3_ALPHA)
+#if defined(GLIDE3)
 /*
 ** 3DF texture file structs
 */
@@ -134,7 +134,7 @@ typedef struct
 ** rendering functions
 */
 
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
 FX_ENTRY void FX_CALL
 guAADrawTriangleWithClip( const GrVertex *a, const GrVertex
                          *b, const GrVertex *c);
@@ -166,7 +166,7 @@ guEncodeRLE16( void *dst,
 
 FX_ENTRY FxU16 * FX_CALL
 guTexCreateColorMipMap( void );
-#endif /* !GLIDE3_ALPHA */
+#endif /* !GLIDE3 */
 
 #ifdef GLIDE3
 FX_ENTRY void FX_CALL 
@@ -192,13 +192,13 @@ guFogGenerateLinear(GrFog_t fogtable[],
 /*
 ** endian stuff
 */
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
 FX_ENTRY FxU32 FX_CALL
 guEndianSwapWords( FxU32 value );
 
 FX_ENTRY FxU16 FX_CALL
 guEndianSwapBytes( FxU16 value );
-#endif /* !GLIDE3_ALPHA */
+#endif /* !GLIDE3 */
 
 /*
 ** hi-level texture manipulation tools.

@@ -27,7 +27,7 @@ public:
                              GrTextureClampMode_t t_clamp_mode, 
                              GrTextureFilterMode_t minFilterMode, 
                              GrTextureFilterMode_t magFilterMode );
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     GrMipMapInfo * GetMipMapInfo( GrMipMapId_t mmid );
 #endif
     void Source( GrMipMapId_t id );
@@ -51,7 +51,7 @@ private:
 
     enum { MAX_MM = 1024 };
 
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     GrMipMapInfo    mm_info[ MAX_MM ];
 #else
 GrMipMapInfoInternal mm_info[ MAX_MM ];

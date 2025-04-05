@@ -338,7 +338,7 @@ int Read3dfHeader( const char *filename, Gu3dfInfo *data )
         GrLOD_t l;
 
         data->mem_required = 0;
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
         for ( l = data->header.large_lod; l <= data->header.small_lod; l++ )
 #else
         for ( l = data->header.small_lod; l <= data->header.large_lod; l++ )

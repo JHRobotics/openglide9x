@@ -152,7 +152,7 @@ grTexDownloadMipMap( GrChipID_t tmu,
 #endif
 
     RenderDrawTriangles( );
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     info->smallLod = info->largeLod;
 #else
     info->smallLodLog2 = info->largeLodLog2;
@@ -200,7 +200,7 @@ grTexDownloadMipMapLevel( GrChipID_t        tmu,
 #endif
 
     static GrTexInfo info;
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     info.smallLod       = thisLod;
     info.largeLod       = largeLod;
     info.aspectRatio    = aspectRatio;
@@ -255,7 +255,7 @@ grTexDownloadMipMapLevelPartial( GrChipID_t        tmu,
 #endif
 
     GrTexInfo info;
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     info.smallLod    = thisLod;
     info.largeLod    = largeLod;
     info.aspectRatio = aspectRatio;
@@ -453,7 +453,7 @@ grTexCalcMemRequired( GrLOD_t lodmin, GrLOD_t lodmax,
     EnterGLThread();
 
     static GrTexInfo texInfo;
-#ifndef GLIDE3_ALPHA
+#ifndef GLIDE3
     texInfo.aspectRatio = aspect;
     texInfo.largeLod    = lodmax;
     texInfo.smallLod    = lodmin;

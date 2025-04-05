@@ -1,6 +1,6 @@
 include config.mk
 
-DEPS = config.mk Makefile
+DEPS = config.mk Makefile GLconf.h
 
 # only usefull with gcc/mingw
 CSTD=c99
@@ -66,10 +66,10 @@ ifdef MSC
 		$(CXX) $(CXXFLAGS) /DGLIDE2 /Fo"$@" /c $<
 	
   %.c.g3.obj: %.c $(DEPS)
-		$(CC) $(CFLAGS) /DGLIDE3 /DGLIDE3_ALPHA /Fo"$@" /c $<
+		$(CC) $(CFLAGS) /DGLIDE3 /Fo"$@" /c $<
 		
   %.cpp.g3.obj: %.cpp $(DEPS)
-		$(CXX) $(CXXFLAGS) /DGLIDE3 /DGLIDE3_ALPHA /Fo"$@" /c $<
+		$(CXX) $(CXXFLAGS) /DGLIDE3 /Fo"$@" /c $<
 	
   %.res: %.rc $(DEPS)
 		$(WINDRES) /nologo /fo $@ $<
@@ -129,7 +129,7 @@ else
   GLIDE3_DEF = Glide3x.def
   
   DEPS_EXTRA = pthread9x/libpthread.a
-  		
+  ifdef VERBOSE
   %.c.g2.o: %.c $(DEPS)
 		$(CC) $(CFLAGS) -DGLIDE2 -c -o $@ $<
 		
@@ -137,14 +137,36 @@ else
 		$(CXX) $(CXXFLAGS) -DGLIDE2 -c -o $@ $<
 		
   %.c.g3.o: %.c $(DEPS)
-		$(CC) $(CFLAGS) -DGLIDE3 -DGLIDE3_ALPHA -c -o $@ $<
+		$(CC) $(CFLAGS) -DGLIDE3 -c -o $@ $<
 		
   %.cpp.g3.o: %.cpp $(DEPS)
-		$(CXX) $(CXXFLAGS) -DGLIDE3 -DGLIDE3_ALPHA -c -o $@ $<
+		$(CXX) $(CXXFLAGS) -DGLIDE3 -c -o $@ $<
 	
   %.res: %.rc $(DEPS)
 		$(WINDRES) -DWINDRES $(RDEFS) --input $< --output $@ --output-format=coff
-	
+
+  else
+  %.c.g2.o: %.c $(DEPS)
+		$(info CC (Glide2) $@)
+		@$(CC) $(CFLAGS) -DGLIDE2 -c -o $@ $<
+
+  %.cpp.g2.o: %.cpp $(DEPS)
+		$(info CXX (Glide2) $@)
+		@$(CXX) $(CXXFLAGS) -DGLIDE2 -c -o $@ $<
+
+  %.c.g3.o: %.c $(DEPS)
+		$(info CC (Glide3) $@)
+		@$(CC) $(CFLAGS) -DGLIDE3 -c -o $@ $<
+
+  %.cpp.g3.o: %.cpp $(DEPS)
+		$(info CXX (Glide3) $@)
+		@$(CXX) $(CXXFLAGS) -DGLIDE3 -c -o $@ $<
+
+  %.res: %.rc $(DEPS)
+		$(info RC $@)
+		@$(WINDRES) -DWINDRES $(RDEFS) --input $< --output $@ --output-format=coff
+  endif
+
   LIBSTATIC = ar rcs -o $@ 
 endif
 
