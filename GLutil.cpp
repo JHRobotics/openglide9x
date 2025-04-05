@@ -24,6 +24,8 @@
 #include "platform/window.h"
 #include "platform/clock.h"
 
+#include "win9x/vmsetup.h"
+
 // Configuration Variables
 ConfigStruct    UserConfig;
 ConfigStruct    InternalConfig;
@@ -31,8 +33,7 @@ ConfigStruct    InternalConfig;
 // Extern prototypes
 extern unsigned long    NumberOfErrors;
 
-const char *reg_config_path = "SOFTWARE\\OpenGlide";
-HKEY        reg_config_key  = HKEY_LOCAL_MACHINE;
+#define VMTOPIC "openglide"
 
 static CRITICAL_SECTION glide_cs;
 
@@ -313,92 +314,6 @@ static char * FindConfig( const char *IniFile, const char *IniConfig )
     return Find;
 }
 
-static char *FindConfigReg(const char *exe, const char *IniConfig)
-{
-	char keybuf[MAX_PATH];
-	static char retbuf[MAX_PATH];
-	HKEY hKey;
-	DWORD type;
-	DWORD size;
-	bool rc = false;
-	
-	strcpy(keybuf, reg_config_path);
-	strcat(keybuf, "\\");
-	strcat(keybuf, exe);
-	
-	LSTATUS lResult = RegOpenKeyEx(reg_config_key, keybuf, 0, KEY_READ, &hKey);
-	if(lResult == ERROR_SUCCESS)
-	{
-		size = MAX_PATH;
-		lResult = RegQueryValueExA(hKey, IniConfig, NULL, &type, (LPBYTE)keybuf, &size);
-		if(lResult == ERROR_SUCCESS)
-	  {
-	  	switch(type)
-	   	{
-				case REG_SZ:
-				case REG_MULTI_SZ:
-				case REG_EXPAND_SZ:
-				{
-					memcpy(retbuf, keybuf, size-1);
-					keybuf[size] = '\0';
-					rc = true;
-					break;
-				}
-				case REG_DWORD:
-				{
-					DWORD temp_dw = *((LPDWORD)keybuf);
-					sprintf(retbuf, "%lu", temp_dw);
-					rc = true;
-					break;
-				}
-			}
-		}
-			
-		RegCloseKey(hKey);
-	}
-	
-	if(!rc)
-	{
-		strcpy(keybuf, reg_config_path);
-		strcat(keybuf, "\\global");
-		
-		LSTATUS lResult = RegOpenKeyEx(reg_config_key, keybuf, 0, KEY_READ, &hKey);
-		if(lResult == ERROR_SUCCESS)
-		{
-			size = MAX_PATH;
-			lResult = RegQueryValueExA(hKey, IniConfig, NULL, &type, (LPBYTE)keybuf, &size);
-			if(lResult == ERROR_SUCCESS)
-		  {
-		  	switch(type)
-		   	{
-					case REG_SZ:
-					case REG_MULTI_SZ:
-					case REG_EXPAND_SZ:
-					{
-						memcpy(retbuf, keybuf, size-1);
-						keybuf[size] = '\0';
-						rc = true;
-						break;
-					}
-					case REG_DWORD:
-					{
-						DWORD temp_dw = *((LPDWORD)keybuf);
-						sprintf(retbuf, "%lu", temp_dw);
-						rc = true;
-						break;
-					}
-				}
-			}
-				
-			RegCloseKey(hKey);
-		}
-	}
-	
-	if(rc) return retbuf;
-	
-	return NULL;
-}
-
 #ifdef VBOX_GLIDE_WITH_IPRT 
 int vbox_access(char const* FileName, int AccessMode)
 {
@@ -418,7 +333,7 @@ void GetOptions( void )
 {
     FILE        * IniFile;
     char        * Pointer;
-    char        * ExeName;
+    const char  *cptr;
     char        Path[MAX_PATH];
     
     /* config default */
@@ -434,38 +349,22 @@ void GetOptions( void )
 		#undef OGL_CFG_FLOAT
 		#undef OGL_CFG_INT
 		
-		/* read config from registry */
-    GetModuleFileNameA(NULL, Path, MAX_PATH-1);
-    Path[MAX_PATH-1] = '\0';
-    ExeName = strrchr(Path, '\\');
-    if(strrchr(Path, '/') > ExeName)
-    {
-    	ExeName = strrchr(Path, '/');
-    }
-    
-    if(ExeName != NULL)
-    {
-    	ExeName++; /* strip leading '\' or '/' */
-    	if(strlen(ExeName))
-    	{
-    		#define OGL_CFG_BOOL(_name, _def, _des) \
-    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atoi(Pointer) ? true : false;
-    	
-    		#define OGL_CFG_INT(_name, _def, _min, _max, _des) \
-    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atoi(Pointer);
-    	
-    		#define OGL_CFG_FLOAT(_name, _def, _min, _max, _des) \
-    			if((Pointer = FindConfigReg(ExeName, #_name)) != NULL) UserConfig._name = atof(Pointer);
-    				
-				#include "GLconf.h"
-		
-				#undef OGL_CFG_BOOL
-				#undef OGL_CFG_FLOAT
-				#undef OGL_CFG_INT
-    	}
-    }
+		/* read config through vmsetup interface */
+		#define OGL_CFG_BOOL(_name, _def, _des) \
+			if(vmhal_setup_str(VMTOPIC, #_name, FALSE) != NULL){ UserConfig._name = vmhal_setup_dw(VMTOPIC, #_name) ? true : false;}
 
-    /* read config name from registry */
+		#define OGL_CFG_INT(_name, _def, _min, _max, _des) \
+			if(vmhal_setup_str(VMTOPIC, #_name, FALSE) != NULL){ UserConfig._name = vmhal_setup_dw(VMTOPIC, #_name);}
+
+		#define OGL_CFG_FLOAT(_name, _def, _min, _max, _des) \
+			if((cptr = vmhal_setup_str(VMTOPIC, #_name, FALSE)) != NULL){ UserConfig._name = atof(cptr);}
+
+		#include "GLconf.h"
+		
+		#undef OGL_CFG_BOOL
+		#undef OGL_CFG_FLOAT
+		#undef OGL_CFG_INT
+
     strcpy( Path, INIFILE ); 
 
     GlideMsg( "Configuration file is %s\n", Path );

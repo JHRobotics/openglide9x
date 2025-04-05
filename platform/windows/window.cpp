@@ -127,6 +127,98 @@ void APIENTRY MessageCallback( GLenum source, GLenum type, GLuint id, GLenum sev
 }
 #endif
 
+#define WND_CLASS_TEST_NAME "gldepthtest"
+
+static bool HasFloatDepth_set = false;
+static bool HasFloatDepth_rc  = false;
+
+bool HasFloatDepth()
+{
+	if(HasFloatDepth_set)
+	{
+		return HasFloatDepth_rc;
+	}
+	
+	WNDCLASS wc      = {0};
+	HWND win;
+
+	PIXELFORMATDESCRIPTOR pfd =
+	{
+		sizeof(PIXELFORMATDESCRIPTOR),
+		1,
+		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    //Flags
+		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+		32,                   // Colordepth of the framebuffer.
+		0, 0, 0, 0, 0, 0,
+		0,
+		0,
+		0,
+		0, 0, 0, 0,
+		24,                   // Number of bits for the depthbuffer
+		8,                    // Number of bits for the stencilbuffer
+		0,                    // Number of Aux buffers in the framebuffer.
+		PFD_MAIN_PLANE,
+		0,
+		0, 0, 0
+	};
+
+	HDC dc;
+	HGLRC ctx;
+	int pixel_format;
+	bool rc = false;
+
+	wc.lpfnWndProc   = DefWindowProc;
+	wc.hInstance     = NULL;
+	wc.hbrBackground = (HBRUSH)(COLOR_BACKGROUND);
+	wc.lpszClassName = WND_CLASS_TEST_NAME;
+	wc.style         = CS_OWNDC;
+	wc.hInstance     = GetModuleHandle(NULL);
+
+	if( !RegisterClass(&wc) )
+	{
+		return false;
+	}
+
+	win = CreateWindowA(WND_CLASS_TEST_NAME, "WGL Check 1",
+		WS_OVERLAPPEDWINDOW|WS_VISIBLE, 0,0,64,64,0,0, NULL, 0);
+
+	if(!win)
+	{
+		return false;
+	}
+
+	dc = GetDC(win);
+	pixel_format = DescribePixelFormat(dc, 0, 0, NULL);
+	pixel_format = ChoosePixelFormat(dc, &pfd);
+	if(pixel_format)
+	{
+		SetPixelFormat(dc, pixel_format, &pfd);
+
+		ctx = DGL(wglCreateContext)(dc);
+		if(ctx)
+		{
+			DGL(wglMakeCurrent)(dc, ctx);
+			const char *exts = (const char*)DGL(glGetString)(GL_EXTENSIONS);
+			if(exts)
+			{
+				const char *support = strstr(exts, "GL_ARB_depth_buffer_float");
+				if(support != NULL)
+				{
+					rc = true;
+				}
+			}
+
+			DGL(wglDeleteContext)(ctx);
+
+			HasFloatDepth_set = true;
+			HasFloatDepth_rc = rc;
+		}
+	}
+	DestroyWindow(win);
+
+	return rc;
+}
+
 bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
 {
     PIXELFORMATDESCRIPTOR   pfd;
@@ -135,13 +227,16 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     unsigned int            DepthBits;
     HWND                    phwnd = (HWND) wnd;
     HWND                    hwnd = NULL;
+    bool                    depth64;
     
     if(!dyngl_load())
     {
     	MessageBox( NULL, "Cannot load opengl32.dll", "Error", MB_OK );
     	exit(1);
     }
-    
+
+    depth64 = HasFloatDepth();
+
     if( phwnd == NULL )
     {
       phwnd = GetActiveWindow();
@@ -210,7 +305,6 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     		break;
     }
 
-
     hDC = GetDC( hWND );
     BitsPerPixel = GetDeviceCaps( hDC, BITSPIXEL );
 
@@ -220,19 +314,28 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     pfd.dwFlags      = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
     pfd.iPixelType   = PFD_TYPE_RGBA;
     pfd.cColorBits   = BitsPerPixel;
-    
+    pfd.cDepthBits   = 0;
+
+    /* depth buffer choice */
     if(UserConfig.DepthBits != 0)
     {
     	DepthBits = UserConfig.DepthBits;
     }
     else
     {
-    	// if(opengl < 3) 24
-    	DepthBits = 64;
+			if(depth64)
+			{
+				DepthBits = 64;
+			}
+			else
+			{
+				DepthBits = 24;
+			}
     }
-    
+
     if(DepthBits > 32)
     {
+    	/* when GL_DEPTH32F_STENCIL8 is supported, it is usually fastest choice */
     	pfd.cDepthBits   = 32;
     	pfd.cStencilBits = 8;
     }
@@ -240,7 +343,12 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     {
     	pfd.cDepthBits   = DepthBits;
     }
-
+/*
+    char buf[128];
+    sprintf(buf, "OpenGL version: %d, cDepthBits: %d, %d",
+    	GLVer, pfd.cDepthBits, pfd.cStencilBits);
+    MessageBoxA(NULL, buf, "GL version", MB_OK);
+*/
     if ( !( PixFormat = ChoosePixelFormat( hDC, &pfd ) ) )
     {
         MessageBox( NULL, "ChoosePixelFormat() failed:  "
