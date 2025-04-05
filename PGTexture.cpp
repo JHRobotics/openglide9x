@@ -72,15 +72,22 @@ void genPaletteMipmaps( FxU32 width, FxU32 height, FxU8 *data )
     }
 }
 
-PGTexture::PGTexture( int mem_size )
+PGTexture::PGTexture( int tmus, int mem_size_per_tmu )
 {
-    m_db = new TexDB( mem_size );
-    m_palette_dirty = true;
-    m_valid = false;
-    m_chromakey_mode = GR_CHROMAKEY_DISABLE;
-    m_tex_memory_size = mem_size;
-    m_memory = new FxU8[ mem_size ];
-    m_ncc_select = GR_NCCTABLE_NCC0;
+	m_tex_memory_size = mem_size_per_tmu;
+
+	m_tmu_cnt = tmus;
+
+	for(int tmu = 0; tmu < m_tmu_cnt; tmu++)
+	{
+		m_tmu[tmu].db = new TexDB( mem_size_per_tmu );
+		m_tmu[tmu].valid = false;
+		m_tmu[tmu].memory = new FxU8[ mem_size_per_tmu ];
+	}
+	m_chromakey_mode = GR_CHROMAKEY_DISABLE;
+	m_palette_dirty = true;
+	
+	m_ncc_select = GR_NCCTABLE_NCC0;
 
 #ifdef OGL_DEBUG
     Num_565_Tex = 0;
@@ -102,8 +109,11 @@ PGTexture::PGTexture( int mem_size )
 
 PGTexture::~PGTexture( void )
 {
-    delete[] m_memory;
-    delete m_db;
+	for(int tmu = 0; tmu < m_tmu_cnt; tmu++)
+	{
+		delete[] m_tmu[tmu].memory;
+		delete m_tmu[tmu].db;
+	}
 }
 
 void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
@@ -137,8 +147,8 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
 #endif
         texVals.lod = 0;
 
-        m_db->WipeRange( startAddress, mip_offset, 0 );
-        m_db->Add( startAddress, mip_offset, info, 0, &texNum, NULL);
+        m_tmu[tmu].db->WipeRange( startAddress, mip_offset, 0 );
+        m_tmu[tmu].db->Add( startAddress, mip_offset, info, 0, &texNum, NULL);
 
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
         DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
@@ -156,12 +166,12 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
     {
         if ( mip_offset <= m_tex_memory_size )
         {
-            memcpy( m_memory + mip_offset - mip_size, info->data, mip_size );
+            memcpy( m_tmu[tmu].memory + mip_offset - mip_size, info->data, mip_size );
         }
         
         // Any texture based on memory crossing this range
         // is now out of date
-        m_db->WipeRange( startAddress, mip_offset, 0 );
+        m_tmu[tmu].db->WipeRange( startAddress, mip_offset, 0 );
     }
 
 #ifdef OGL_DEBUG
@@ -221,28 +231,28 @@ void PGTexture::DownloadMipMapPartial( GrChipID_t tmu, FxU32 startAddress, FxU32
         
         if (info->format >= GR_TEXFMT_16BIT)
             stride *= 2;
-        FxU8 *mip_memory = m_memory + mip_offset - mip_size;
+        FxU8 *mip_memory = m_tmu[tmu].memory + mip_offset - mip_size;
         memcpy( mip_memory + start * stride, info->data, (end - start + 1) * stride );
 
-        m_db->WipeRange( startAddress, mip_offset, 0 );
+        m_tmu[tmu].db->WipeRange( startAddress, mip_offset, 0 );
     }
 }
 
 void PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
 {
-    m_startAddress = startAddress;
-    m_evenOdd = evenOdd;
-    m_info = *info;
+    m_tmu[tmu].startAddress = startAddress;
+    m_tmu[tmu].evenOdd = evenOdd;
+    m_tmu[tmu].info = *info;
 
 #ifndef GLIDE3_ALPHA
-    m_wAspect = texAspects[ info->aspectRatio ].w;
-    m_hAspect = texAspects[ info->aspectRatio ].h;
+    m_tmu[tmu].wAspect = texAspects[ info->aspectRatio ].w;
+    m_tmu[tmu].hAspect = texAspects[ info->aspectRatio ].h;
 #else
-    m_wAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].w;
-    m_hAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].h;
+    m_tmu[tmu].wAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].w;
+    m_tmu[tmu].hAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].h;
 #endif
 
-    m_valid = ( ( startAddress + TextureMemRequired( evenOdd, info ) ) <= m_tex_memory_size );
+    m_tmu[tmu].valid = ( ( startAddress + TextureMemRequired( evenOdd, info ) ) <= m_tex_memory_size );
 }
 
 void PGTexture::DownloadTable( GrTexTable_t type, FxU32 *data, int first, int count )
@@ -283,7 +293,7 @@ void PGTexture::DownloadTable( GrTexTable_t type, FxU32 *data, int first, int co
     }
 }
 
-bool PGTexture::MakeReady( void )
+bool PGTexture::MakeReady( int tmu )
 {
     FxU8        * data;
     TexValues   texVals;
@@ -296,9 +306,8 @@ bool PGTexture::MakeReady( void )
     bool        * pal_change_ptr;
     bool        use_mipmap_ext;
     bool        use_mipmap_ext2;
-    bool        use_two_textures;
 
-    if( ! m_valid )
+    if( ! m_tmu[tmu].valid )
     {
         return false;
     }
@@ -308,16 +317,15 @@ bool PGTexture::MakeReady( void )
     palette_changed  = false;
     use_mipmap_ext   = ( InternalConfig.EnableMipMaps && !InternalConfig.BuildMipMaps );
     use_mipmap_ext2  = use_mipmap_ext;
-    use_two_textures = false;
     pal_change_ptr   = NULL;
     
-    data             = m_memory + m_startAddress;
+    data             = m_tmu[tmu].memory + m_tmu[tmu].startAddress;
 
-    size             = TextureMemRequired( m_evenOdd, &m_info );
+    size             = TextureMemRequired( m_tmu[tmu].evenOdd, &m_tmu[tmu].info );
 
-    GetTexValues( &texVals );
+    GetTexValues(tmu, &texVals );
     
-    switch ( m_info.format )
+    switch ( m_tmu[tmu].info.format )
     {
     case GR_TEXFMT_P_8:
         ApplyKeyToPalette( );
@@ -340,6 +348,7 @@ bool PGTexture::MakeReady( void )
 
     case GR_TEXFMT_AP_88:
         ApplyKeyToPalette( );
+#if 0
         if ( InternalConfig.EXT_paletted_texture && InternalConfig.ARB_multitexture )
         {
             use_mipmap_ext   = false;
@@ -347,6 +356,7 @@ bool PGTexture::MakeReady( void )
             use_two_textures = true;
         }
         else
+#endif
         {
             wipe_hash = m_palette_hash;
         }
@@ -356,8 +366,8 @@ bool PGTexture::MakeReady( void )
     }
 
     // See if we already have an OpenGL texture to match this
-    if ( m_db->Find( m_startAddress, &m_info, test_hash,
-                     &texNum, use_two_textures ? &tex2Num : NULL,
+    if ( m_tmu[tmu].db->Find( m_tmu[tmu].startAddress, &m_tmu[tmu].info, test_hash,
+                     &texNum, NULL,
                      pal_change_ptr ) )
     {
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
@@ -366,26 +376,17 @@ bool PGTexture::MakeReady( void )
         {
             p_glColorTableEXT( GL_TEXTURE_2D, GL_RGBA, 256, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_palette );
         }
-
-        if ( use_two_textures )
-        {
-            p_glActiveTextureARB( GL_TEXTURE1_ARB );
-
-            DGL(glBindTexture)( GL_TEXTURE_2D, tex2Num );
-
-            p_glActiveTextureARB( GL_TEXTURE0_ARB );
-        }
     }
     else
     {
         // Any existing textures crossing this memory range
         // is unlikely to be used, so remove the OpenGL version
         // of them
-        m_db->WipeRange( m_startAddress, m_startAddress + size, wipe_hash );
+        m_tmu[tmu].db->WipeRange( m_tmu[tmu].startAddress, m_tmu[tmu].startAddress + size, wipe_hash );
 
         // Add this new texture to the data base
-        m_db->Add( m_startAddress, m_startAddress + size, &m_info, test_hash,
-                   &texNum, use_two_textures ? &tex2Num : NULL );
+        m_tmu[tmu].db->Add( m_tmu[tmu].startAddress, m_tmu[tmu].startAddress + size, &m_tmu[tmu].info, test_hash,
+                   &texNum, NULL );
 
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
         DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
@@ -399,26 +400,7 @@ bool PGTexture::MakeReady( void )
             DGL(glTexParameteri)( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, true );
         }
 
-        if ( use_two_textures )
-        {
-            p_glActiveTextureARB( GL_TEXTURE1_ARB );
-
-            DGL(glBindTexture)( GL_TEXTURE_2D, tex2Num );
-            DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
-            DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.TClampMode );
-        
-            DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
-            DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
-
-            if( use_mipmap_ext2 )
-            {
-                DGL(glTexParameteri)( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, true );
-            }
-            
-            p_glActiveTextureARB( GL_TEXTURE0_ARB );
-        }
-
-        switch ( m_info.format )
+        switch ( m_tmu[tmu].info.format )
         {
         case GR_TEXFMT_RGB_565:
             if ( m_chromakey_mode )
@@ -501,6 +483,7 @@ bool PGTexture::MakeReady( void )
             break;
             
         case GR_TEXFMT_AP_88:
+#if 0
             if ( use_two_textures )
             {
                 FxU32 *tex_temp2 = m_tex_temp + 256 * 128;
@@ -524,6 +507,7 @@ bool PGTexture::MakeReady( void )
                 p_glActiveTextureARB( GL_TEXTURE0_ARB );
             }
             else
+#endif
             {
             	// JHFIX: buffer overflow here!
             	if(texVals.nPixels <= TEX_TEMP_PIXELS)
@@ -587,7 +571,7 @@ bool PGTexture::MakeReady( void )
         case GR_TEXFMT_RSVD0:
         case GR_TEXFMT_RSVD1:
         case GR_TEXFMT_RSVD2:
-            Error( "grTexDownloadMipMapLevel - Unsupported format(%d)\n", m_info.format );
+            Error( "grTexDownloadMipMapLevel - Unsupported format(%d)\n", m_tmu[tmu].info.format );
             memset( m_tex_temp, 255, texVals.nPixels * 2 );
             OGL_LOAD_CREATE_TEXTURE( 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_tex_temp );
             break;
@@ -600,20 +584,7 @@ bool PGTexture::MakeReady( void )
     DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
     DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
     
-    if ( use_two_textures )
-    {
-        p_glActiveTextureARB( GL_TEXTURE1_ARB );
-        
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.TClampMode );
-        
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
-        
-        p_glActiveTextureARB( GL_TEXTURE0_ARB );
-    }
-
-    return use_two_textures;
+    return false;
 }
 
 FxU32 PGTexture::LodOffset( FxU32 evenOdd, GrTexInfo *info )
@@ -679,29 +650,41 @@ FxU32 PGTexture::MipMapMemRequired( GrLOD_t lod, GrAspectRatio_t aspectRatio, Gr
 #endif
 }
 
-void PGTexture::GetTexValues( TexValues * tval )
+void PGTexture::GetTexValues(int tmu, TexValues * tval )
 {
+	GrTexInfo *info = &m_tmu[tmu].info;
+	
 #ifndef GLIDE3_ALPHA
-    tval->width = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].width;
-    tval->height = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].height;
-    tval->nPixels = texInfo[ m_info.aspectRatio ][ m_info.largeLod ].numPixels;
+    tval->width = texInfo[ info->aspectRatio ][ info->largeLod ].width;
+    tval->height = texInfo[ info->aspectRatio ][ info->largeLod ].height;
+    tval->nPixels = texInfo[ info->aspectRatio ][ info->largeLod ].numPixels;
 #else
-    tval->width = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].width;
-    tval->height = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].height;
-    tval->nPixels = texInfo[ 3 - m_info.aspectRatioLog2 ][ 8 - m_info.largeLodLog2 ].numPixels;
+    tval->width = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].width;
+    tval->height = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].height;
+    tval->nPixels = texInfo[ 3 - info->aspectRatioLog2 ][ 8 - info->largeLodLog2 ].numPixels;
 #endif
     tval->lod = 0;
 }
 
 void PGTexture::Clear( void )
 {
-    m_db->Clear( );
+	for(int tmu = 0; tmu < m_tmu_cnt; tmu++)
+	{
+		m_tmu[tmu].db->Clear( );
+	}
 }
 
-void PGTexture::GetAspect( float *hAspect, float *wAspect )
+bool PGTexture::GetAspect( int tmu, float *hAspect, float *wAspect )
 {
-    *hAspect = m_hAspect;
-    *wAspect = m_wAspect;
+	if(tmu > m_tmu_cnt)
+	{
+		return false;
+	}
+
+	*hAspect = m_tmu[tmu].hAspect;
+  *wAspect = m_tmu[tmu].wAspect;
+  
+  return true;
 }
 
 void PGTexture::ChromakeyValue( GrColor_t value )

@@ -252,7 +252,7 @@ struct OpenGLStruct
     FxU8                    FogTable[ OPENGLFOGTABLESIZE ];
     OGLByteColor            ChromaColor;
     bool                    Fog;
-    bool                    Texture;
+    bool                    Texture[ GLIDE_NUM_TMU ];
     bool                    ColorTexture;
     bool                    AlphaTexture;
     bool                    Blend;

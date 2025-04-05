@@ -132,6 +132,7 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     PIXELFORMATDESCRIPTOR   pfd;
     int                     PixFormat;
     unsigned int            BitsPerPixel;
+    unsigned int            DepthBits;
     HWND                    phwnd = (HWND) wnd;
     HWND                    hwnd = NULL;
     
@@ -222,11 +223,22 @@ bool InitialiseOpenGLWindow(FxU wnd, int x, int y, int width, int height)
     
     if(UserConfig.DepthBits != 0)
     {
-    	pfd.cDepthBits   = UserConfig.DepthBits;
+    	DepthBits = UserConfig.DepthBits;
     }
     else
     {
-    	pfd.cDepthBits   = BitsPerPixel;
+    	// if(opengl < 3) 24
+    	DepthBits = 64;
+    }
+    
+    if(DepthBits > 32)
+    {
+    	pfd.cDepthBits   = 32;
+    	pfd.cStencilBits = 8;
+    }
+    else
+    {
+    	pfd.cDepthBits   = DepthBits;
     }
 
     if ( !( PixFormat = ChoosePixelFormat( hDC, &pfd ) ) )
@@ -314,7 +326,7 @@ static void CloneContext()
 }
 
 void EnterGLThread()
-{	
+{
 	if(hDC == NULL || hRC == NULL)
 	{
 		return;
@@ -329,7 +341,14 @@ void EnterGLThread()
 		LeaveCriticalSection(&draw_cs);
 		return; /* all OK */
 	}
-		
+#if 0
+	/* this is usualy works in other implementation (mesa os, mesa icd),
+	 * but on WGL is context thread specific.
+	 */
+	DGL(wglMakeCurrent)(hDC, hRC);
+	draw_thread = tid;
+	LeaveCriticalSection(&draw_cs);	
+#else
 	/* flush old context, if there were any */
 	DGL(wglMakeCurrent)(NULL, NULL);
 		
@@ -347,6 +366,7 @@ void EnterGLThread()
 	CloneContext();
 	
 	DGL(wglDeleteContext)(old_hRc);
+#endif
 }
 
 void FinaliseOpenGLWindow( void)

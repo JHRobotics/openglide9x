@@ -115,7 +115,7 @@ n** -----------------------------------------------------------------------
 #endif
 
 
-#if ( ( GLIDE_NUM_TMU < 0 ) && ( GLIDE_NUM_TMU > 3 ) )
+#if ( ( GLIDE_NUM_TMU <= 0 ) && ( GLIDE_NUM_TMU > 3 ) )
 #  error "GLIDE_NUM_TMU set to an invalid value"
 #endif
 

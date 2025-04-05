@@ -129,6 +129,7 @@ void RenderFree( void )
 
 void RenderUpdateArrays( void )
 {
+	/* JH: OK this is all bad, don't use vertex array yet */
     DGL(glVertexPointer)( 3, GL_FLOAT, 4 * sizeof( GLfloat ), &OGLRender.TVertex[0] );
     DGL(glColorPointer)( 4, GL_FLOAT, 0, &OGLRender.TColor[0] );
     if ( InternalConfig.ARB_multitexture )
@@ -162,32 +163,29 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
 {
 	GlideMsg("%s:%d: RenderDrawTriangles()\n", fn, line);
 #endif
-    bool use_two_tex = false;
+    //bool use_two_tex = false;
+    int tmu;
     
     if ( ! OGLRender.NumberOfTriangles )
     {
         return;
     }
 
-    if ( OpenGL.Texture )
-    {
-        DGL(glEnable)( GL_TEXTURE_2D );
-
-        use_two_tex = Textures->MakeReady( );
-
-        if ( use_two_tex )
+		for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+		{
+			  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+        if ( OpenGL.Texture[tmu] )
         {
-            p_glActiveTextureARB( GL_TEXTURE1_ARB );
-
             DGL(glEnable)( GL_TEXTURE_2D );
 
-            p_glActiveTextureARB( GL_TEXTURE0_ARB );
+	          Textures->MakeReady( tmu );
+        }
+        else
+        {
+            DGL(glDisable)( GL_TEXTURE_2D );
         }
     }
-    else
-    {
-        DGL(glDisable)( GL_TEXTURE_2D );
-    }
+    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -223,18 +221,43 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
             DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
+#if GLIDE_NUM_TMU >= 2
+            if(InternalConfig.NumTMU >= 2)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+            if(InternalConfig.NumTMU >= 3)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].as2);
+#endif
+            
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
             
             DGL(glColor3fv)( &OGLRender.TColor[ i ].br );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
             DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
+#if GLIDE_NUM_TMU >= 2
+            if(InternalConfig.NumTMU >= 2)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+            if(InternalConfig.NumTMU >= 3)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].bs2);
+#endif
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
             
             DGL(glColor3fv)( &OGLRender.TColor[ i ].cr );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
             DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
+#if GLIDE_NUM_TMU >= 2
+            if(InternalConfig.NumTMU >= 2)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+            if(InternalConfig.NumTMU >= 3)
+            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].cs2);
+#endif
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
         }
         DGL(glEnd)( );
@@ -256,30 +279,42 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
                 DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
-                if ( use_two_tex )
-                {
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as );
-                }
+#if GLIDE_NUM_TMU >= 2
+                if(InternalConfig.NumTMU >= 2)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+                if(InternalConfig.NumTMU >= 3)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].as2);
+#endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
                 
                 DGL(glColor4fv)( &OGLRender.TColor[ i ].br );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
                 DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
-                if ( use_two_tex )
-                {
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs );
-                }
+#if GLIDE_NUM_TMU >= 2
+                if(InternalConfig.NumTMU >= 2)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+                if(InternalConfig.NumTMU >= 3)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].bs2);
+#endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
                 
                 DGL(glColor4fv)( &OGLRender.TColor[ i ].cr );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
                 DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
-                if ( use_two_tex )
-                {
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs );
-                }
+#if GLIDE_NUM_TMU >= 2
+                if(InternalConfig.NumTMU >= 2)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+                if(InternalConfig.NumTMU >= 3)
+                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].cs2);
+#endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
             }
             DGL(glEnd)( );
@@ -339,15 +374,6 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
         {
             DGL(glBlendFunc)( OpenGL.SrcBlend, OpenGL.DstBlend );
         }
-    }
-
-    if ( use_two_tex )
-    {
-        p_glActiveTextureARB( GL_TEXTURE1_ARB );
-
-        DGL(glDisable)( GL_TEXTURE_2D );
-
-        p_glActiveTextureARB( GL_TEXTURE0_ARB );
     }
 
 #ifdef OGL_DEBUG
@@ -429,7 +455,7 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
             break;
 
         case GR_COMBINE_OTHER_TEXTURE:
-            if ( OpenGL.Texture )
+            if ( OpenGL.Texture[0] )
             {
                 Other.aa = Other.ba = Other.ca = 1.0f;
             }
@@ -488,7 +514,7 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
             break;
 
         case GR_COMBINE_OTHER_TEXTURE:
-            if ( OpenGL.Texture )
+            if ( OpenGL.Texture[0] )
             {
                 Other.ar = Other.ag = Other.ab = 1.0f;
                 Other.br = Other.bg = Other.bb = 1.0f;
@@ -649,40 +675,52 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
         pV->cy = c->y;
     }
 
-    if ( OpenGL.Texture )
-    {
-    	  float maxw = max(max( atmuoow, max( btmuoow, ctmuoow ) ), D1OVER65535);
-        maxoow = 1.0f / maxw;
 
-        Textures->GetAspect( &hAspect, &wAspect );
+ 		float maxw = max(max( atmuoow, max( btmuoow, ctmuoow ) ), D1OVER65535);
+		maxoow = 1.0f / maxw;
+    
+		if ( OpenGL.Texture[0] )
+		{
+			Textures->GetAspect(0, &hAspect, &wAspect );
 
-        pTS->as = a->tmuvtx[ 0 ].sow * wAspect * maxoow;
-        pTS->at = a->tmuvtx[ 0 ].tow * hAspect * maxoow;
-        pTS->bs = b->tmuvtx[ 0 ].sow * wAspect * maxoow;
-        pTS->bt = b->tmuvtx[ 0 ].tow * hAspect * maxoow;
-        pTS->cs = c->tmuvtx[ 0 ].sow * wAspect * maxoow;
-        pTS->ct = c->tmuvtx[ 0 ].tow * hAspect * maxoow;
+			pTS->as = a->tmuvtx[ 0 ].sow * wAspect * maxoow;
+			pTS->at = a->tmuvtx[ 0 ].tow * hAspect * maxoow;
+			pTS->bs = b->tmuvtx[ 0 ].sow * wAspect * maxoow;
+			pTS->bt = b->tmuvtx[ 0 ].tow * hAspect * maxoow;
+			pTS->cs = c->tmuvtx[ 0 ].sow * wAspect * maxoow;
+			pTS->ct = c->tmuvtx[ 0 ].tow * hAspect * maxoow;
 
-        pTS->aq = pTS->bq = pTS->cq = 0.0f;
-        pTS->aoow = atmuoow * maxoow;
-        pTS->boow = btmuoow * maxoow;
-        pTS->coow = ctmuoow * maxoow;
-        
-#if GLIDE_NUM_TMU > 1
-        pTS->as1 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
-        pTS->at1 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
-        pTS->bs1 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
-        pTS->bt1 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
-        pTS->cs1 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
-        pTS->ct1 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
+			pTS->aq = pTS->bq = pTS->cq = 0.0f;
+			pTS->aoow = atmuoow * maxoow;
+			pTS->boow = btmuoow * maxoow;
+			pTS->coow = ctmuoow * maxoow;
+		}
 
-        pTS->aq1 = pTS->bq1 = pTS->cq1 = 0.0f;
-        pTS->aoow1 = atmuoow * maxoow;
-        pTS->boow1 = btmuoow * maxoow;
-        pTS->coow1 = ctmuoow * maxoow;
+#if GLIDE_NUM_TMU >= 2
+		if ( OpenGL.Texture[1] )
+		{
+			if(Textures->GetAspect( 1, &hAspect, &wAspect ))
+			{
+				pTS->as1 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
+				pTS->at1 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
+				pTS->bs1 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
+				pTS->bt1 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
+				pTS->cs1 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
+				pTS->ct1 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
+
+				pTS->aq1 = pTS->bq1 = pTS->cq1 = 0.0f;
+				pTS->aoow1 = atmuoow * maxoow;
+				pTS->boow1 = btmuoow * maxoow;
+				pTS->coow1 = ctmuoow * maxoow;
+			}
+		}
 #endif
 
-#if GLIDE_NUM_TMU > 2
+#if GLIDE_NUM_TMU >= 3
+		if ( OpenGL.Texture[2] )
+		{
+			if(Textures->GetAspect( 2, &hAspect, &wAspect ))
+			{
         pTS->as2 = a->tmuvtx[ 2 ].sow * wAspect * maxoow;
         pTS->at2 = a->tmuvtx[ 2 ].tow * hAspect * maxoow;
         pTS->bs2 = b->tmuvtx[ 2 ].sow * wAspect * maxoow;
@@ -694,8 +732,9 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
         pTS->aoow2 = atmuoow * maxoow;
         pTS->boow2 = btmuoow * maxoow;
         pTS->coow2 = ctmuoow * maxoow;
-#endif
+			}
     }
+#endif
 
     if( InternalConfig.FogEnable )
     {
@@ -1167,9 +1206,9 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
         pV->by = b->y;
     }
 
-    if ( OpenGL.Texture )
+    if ( OpenGL.Texture[0] )
     {
-        Textures->GetAspect( &hAspect, &wAspect );
+        Textures->GetAspect(0, &hAspect, &wAspect );
 
         pTS->as = a->tmuvtx[0].sow * wAspect; // / a->oow;
         pTS->at = a->tmuvtx[0].tow * hAspect; // / a->oow;
@@ -1180,6 +1219,40 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
         pTS->aoow = atmuoow;
         pTS->boow = btmuoow;
     }
+
+#if GLIDE_NUM_TMU >= 2
+		if ( OpenGL.Texture[1] )
+		{
+			if(Textures->GetAspect(1, &hAspect, &wAspect ))
+			{
+				pTS->as1 = a->tmuvtx[1].sow * wAspect; // / a->oow;
+				pTS->at1 = a->tmuvtx[1].tow * hAspect; // / a->oow;
+				pTS->bs1 = b->tmuvtx[1].sow * wAspect; // / b->oow;
+				pTS->bt1 = b->tmuvtx[1].tow * hAspect; // / b->oow;
+
+				pTS->aq1 = pTS->bq1 = 0.0f;
+				pTS->aoow1 = atmuoow;
+				pTS->boow1 = btmuoow;
+			}
+		}
+#endif
+
+#if GLIDE_NUM_TMU >= 3
+		if ( OpenGL.Texture[2] )
+		{
+			if(Textures->GetAspect(2, &hAspect, &wAspect ))
+			{
+				pTS->as2 = a->tmuvtx[2].sow * wAspect; // / a->oow;
+				pTS->at2 = a->tmuvtx[2].tow * hAspect; // / a->oow;
+				pTS->bs2 = b->tmuvtx[2].sow * wAspect; // / b->oow;
+				pTS->bt2 = b->tmuvtx[2].tow * hAspect; // / b->oow;
+
+				pTS->aq2 = pTS->bq2 = 0.0f;
+				pTS->aoow2 = atmuoow;
+				pTS->boow2 = btmuoow;
+			}
+		}
+#endif
 
     if ( InternalConfig.FogEnable )
     {
@@ -1225,17 +1298,23 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
     DEBUG_MIN_MAX( pTS->at, OGLRender.MaxT, OGLRender.MinT );
     DEBUG_MIN_MAX( pTS->bt, OGLRender.MaxT, OGLRender.MinT );
 #endif
-
-    if ( OpenGL.Texture )
+    
+    int tmu;
+    for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
     {
-        DGL(glEnable)( GL_TEXTURE_2D );
+    	  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+        if ( OpenGL.Texture[tmu] )
+        {
+            DGL(glEnable)( GL_TEXTURE_2D );
 
-        Textures->MakeReady( );
+            Textures->MakeReady( tmu );
+        }
+        else
+        {
+            DGL(glDisable)( GL_TEXTURE_2D );
+        }
     }
-    else
-    {
-        DGL(glDisable)( GL_TEXTURE_2D );
-    }
+    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -1263,12 +1342,28 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
         DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
         DGL(glTexCoord4fv)( &pTS->as );
+#if GLIDE_NUM_TMU >= 2
+        if(InternalConfig.NumTMU >= 2)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->as1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+        if(InternalConfig.NumTMU >= 3)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->as2);
+#endif
         p_glFogCoordfEXT( pF->af );
         DGL(glVertex3fv)( &pV->ax );
 
         DGL(glColor4fv)( &pC->br );
         p_glSecondaryColor3fvEXT( &pC2->br );
         DGL(glTexCoord4fv)( &pTS->bs );
+#if GLIDE_NUM_TMU >= 2
+        if(InternalConfig.NumTMU >= 2)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->bs1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+        if(InternalConfig.NumTMU >= 3)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->bs2);
+#endif
         p_glFogCoordfEXT( pF->bf );
         DGL(glVertex3fv)( &pV->bx );
     DGL(glEnd)();
@@ -1280,6 +1375,8 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
 
 void RenderAddPoint( const GrVertex *a, bool unsnap )
 {
+	  int tmu;
+	
     pC  = &OGLRender.TColor[ MAXTRIANGLES ];
     pC2 = &OGLRender.TColor2[ MAXTRIANGLES ];
     pV  = &OGLRender.TVertex[ MAXTRIANGLES ];
@@ -1562,16 +1659,42 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
         pV->ay = a->y;
     }
 
-    if ( OpenGL.Texture )
-    {
-        Textures->GetAspect( &hAspect, &wAspect );
+		if ( OpenGL.Texture[0] )
+		{
+			Textures->GetAspect( 0, &hAspect, &wAspect );
 
-        pTS->as = a->tmuvtx[0].sow * wAspect;
-        pTS->at = a->tmuvtx[0].tow * hAspect;
+			pTS->as = a->tmuvtx[0].sow * wAspect;
+			pTS->at = a->tmuvtx[0].tow * hAspect;
 
-        pTS->aq = 0.0f;
-        pTS->aoow = a->oow;
-    }
+			pTS->aq = 0.0f;
+			pTS->aoow = a->oow;
+		}
+		
+#if GLIDE_NUM_TMU >= 2
+		if ( OpenGL.Texture[1] )
+		{
+			Textures->GetAspect( 1, &hAspect, &wAspect );
+
+			pTS->as1 = a->tmuvtx[1].sow * wAspect;
+			pTS->at1 = a->tmuvtx[1].tow * hAspect;
+
+			pTS->aq1 = 0.0f;
+			pTS->aoow1 = a->oow;
+		}
+#endif
+
+#if GLIDE_NUM_TMU >= 3
+		if ( OpenGL.Texture[2] )
+		{
+			Textures->GetAspect( 2, &hAspect, &wAspect );
+
+			pTS->as2 = a->tmuvtx[2].sow * wAspect;
+			pTS->at2 = a->tmuvtx[2].tow * hAspect;
+
+			pTS->aq2 = 0.0f;
+			pTS->aoow2 = a->oow;
+		}
+#endif
 
     if( InternalConfig.FogEnable )
     {
@@ -1605,17 +1728,21 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
 
     DEBUG_MIN_MAX( pTS->at, OGLRender.MaxT, OGLRender.MinT );
 #endif
-
-    if ( OpenGL.Texture )
+    for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
     {
-        DGL(glEnable)( GL_TEXTURE_2D );
+    	  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+        if ( OpenGL.Texture[tmu] )
+        {
+            DGL(glEnable)( GL_TEXTURE_2D );
 
-        Textures->MakeReady( );
+            Textures->MakeReady( tmu );
+        }
+        else
+        {
+            DGL(glDisable)( GL_TEXTURE_2D );
+        }
     }
-    else
-    {
-        DGL(glDisable)( GL_TEXTURE_2D );
-    }
+    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -1643,6 +1770,14 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
         DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
         DGL(glTexCoord4fv)( &pTS->as );
+#if GLIDE_NUM_TMU >= 2
+        if(InternalConfig.NumTMU >= 2)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->as1);
+#endif
+#if GLIDE_NUM_TMU >= 3
+        if(InternalConfig.NumTMU >= 3)
+            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->as2);
+#endif
         p_glFogCoordfEXT( pF->af );
         DGL(glVertex3fv)( &pV->ax );
     DGL(glEnd)();

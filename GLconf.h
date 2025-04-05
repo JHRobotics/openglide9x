@@ -9,7 +9,7 @@ OGL_CFG_BOOL(InitFullScreen,           false, "Fullscreen mode")
 
 OGL_CFG_BOOL(PrecisionFix,             false, "Round values for integer depth buffer")
 OGL_CFG_BOOL(CreateWindow,             true, "Create Window if NULL is passed to grSstWinOpen")
-OGL_CFG_INT(DepthBits,                 24, 0, 32, "Sets required depth buffer bits, 0 for same as screen")
+OGL_CFG_INT(DepthBits,                 0, 0, 64, "Sets required depth buffer bits, 0 auto choose for best performance")
 OGL_CFG_BOOL(EnableMipMaps,            true, "")
 OGL_CFG_BOOL(BuildMipMaps,            false, "")
 OGL_CFG_BOOL(IgnorePaletteChange,     false, "")
@@ -39,6 +39,10 @@ OGL_CFG_BOOL(Logging,                     false, "")
 OGL_CFG_BOOL(Logging,                     true, "")
 #endif
 
+#if GLIDE_NUM_TMU > 1
+OGL_CFG_INT(NumTMU,                2,   1,    GLIDE_NUM_TMU, "Number of texture mapping units (TMU), 1 = most compatible")
+#else
 OGL_CFG_INT(NumTMU,                1,   1,    GLIDE_NUM_TMU, "Number of texture mapping units (TMU), 1 = most compatible")
+#endif
 OGL_CFG_INT(SSTType,              -1,  -1,    4, "Type of Voodoo board: -1 = auto, 0 = Voodoo, 1 = Rush, 3 = Voodoo2, 4 = Banshee")
 OGL_CFG_BOOL(Disabled,                    false, "Deny load, ideal, if you want ship 3dfx OpenGL and continue to normal OpenGL")

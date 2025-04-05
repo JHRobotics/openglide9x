@@ -125,32 +125,44 @@ grGlideInit( void )
     RenderInitialize( );
 
     Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024 * UserConfig.NumTMU;
+    Glide.TexMemoryMaxPosition   = (FxU32)Glide.TextureMemory;
+    Glide.TexMemoryPerTMU        = UserConfig.TextureMemorySize * 1024 * 1024;
 
-    Textures = new PGTexture( Glide.TextureMemory );
+    Textures = new PGTexture( UserConfig.NumTMU, Glide.TexMemoryPerTMU );
     if ( Textures == NULL )
     {
         Error( "Cannot allocate enough memory for Texture Buffer in User setting, using default" );
     }
 
-    Glide.TexMemoryMaxPosition   = (FxU32)Glide.TextureMemory;
-    Glide.TexMemoryPerTMU        = UserConfig.TextureMemorySize * 1024 * 1024;
     InternalConfig.NoSplash      = UserConfig.NoSplash;
     InternalConfig.ShamelessPlug = UserConfig.ShamelessPlug;
     
+    if(InternalConfig.NumTMU <= GLIDE_NUM_TMU)
+    {
+    	InternalConfig.NumTMU = UserConfig.NumTMU;
+    }
+    
     if(UserConfig.SSTType < 0)
     {
+			if(InternalConfig.NumTMU == 1)
+			{
 #ifndef GLIDE3
-			Glide.SSTType = GR_SSTTYPE_VOODOO;
+				Glide.SSTType = GR_SSTTYPE_VOODOO;
 #else
-			Glide.SSTType = GR_SSTTYPE_Banshee;
+				Glide.SSTType = GR_SSTTYPE_Banshee;
 #endif
+			}
+			else
+			{
+				Glide.SSTType = GR_SSTTYPE_Voodoo2;
+			}
   	}
   	else
   	{
   		Glide.SSTType = UserConfig.SSTType;
   	}
-  	
-  	switch(UserConfig.SSTType)
+
+  	switch(Glide.SSTType)
   	{
   		case GR_SSTTYPE_VOODOO:
   			Glide.PixelfxVersion = 2;

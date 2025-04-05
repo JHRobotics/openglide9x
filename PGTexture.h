@@ -34,17 +34,17 @@ public:
                                     GrTextureFormat_t format );
     void ChromakeyMode( GrChromakeyMode_t mode );
     void ChromakeyValue( GrColor_t value );
-    void GetAspect( float *hAspect, float *wAspect );
+    bool GetAspect( int tmu, float *hAspect, float *wAspect );
     void Clear( void );
     static FxU32 TextureMemRequired( FxU32 evenOdd, GrTexInfo *info );
-    bool MakeReady( void );
+    bool MakeReady( int tmu );
     void DownloadTable( GrTexTable_t type, FxU32 *data, int first, int count );
     void Source(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info );
     void DownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info );
     void DownloadMipMapPartial(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info, int start, int end );
     FxU32 GetMemorySize( void );
 
-    PGTexture( int mem_size );
+    PGTexture( int tmus, int mem_size_per_tmu );
     virtual ~PGTexture();
 
 #ifdef OGL_DEBUG
@@ -66,22 +66,29 @@ public:
 
 private:
     void ApplyKeyToPalette( void );
-    void GetTexValues( TexValues *tval );
+    void GetTexValues(int tmu, TexValues *tval );
 
     FxU32           m_tex_memory_size;
     bool            m_palette_dirty;
     FxU32           m_palette_hash;
-    TexDB *         m_db;
     GrChromakeyMode_t m_chromakey_mode;
     FxU32           m_chromakey_value_8888;
     FxU16           m_chromakey_value_565;
-    float           m_wAspect;
-    float           m_hAspect;
-    bool            m_valid;
-    FxU8 *          m_memory;
-    FxU32           m_startAddress;
-    FxU32           m_evenOdd;
-    GrTexInfo       m_info;
+
+    struct TexSingleTMU
+    {
+      TexDB *         db;
+      float           wAspect;
+      float           hAspect;
+      bool            valid;
+      FxU8 *          memory;
+      FxU32           startAddress;
+      FxU32           evenOdd;
+      GrTexInfo       info;
+    };
+    TexSingleTMU m_tmu[GLIDE_NUM_TMU];
+    int m_tmu_cnt;
+
     FxU32           m_palette[ 256 ];
     GrNCCTable_t    m_ncc_select;
     GuNccTable      m_ncc[2];

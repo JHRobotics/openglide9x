@@ -107,10 +107,6 @@ grTexSource( GrChipID_t tmu,
     Glide.State.TexSource[tmu].Info.smallLod = info->smallLod;
 #endif
 
-#ifdef NO_TMU0_LIMIT
-
-#endif
-
     Textures->Source(tmu, startAddress, evenOdd, info );    
 
     LeaveGLThread();
@@ -611,11 +607,11 @@ grTexCombine( GrChipID_t tmu,
     if ( ( rgb_function != GR_COMBINE_FUNCTION_ZERO ) ||
          ( alpha_function != GR_COMBINE_FUNCTION_ZERO ) )
     {
-        OpenGL.Texture = true;
+        OpenGL.Texture[tmu] = true;
     }
     else
     {
-        OpenGL.Texture = false;
+        OpenGL.Texture[tmu] = false;
     }
 /*
     switch ( rgb_function )
