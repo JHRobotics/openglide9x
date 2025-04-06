@@ -58,7 +58,7 @@ stExtensionSupport glNecessaryExt[] =
     { "GL_SGIS_generate_mipmap",        OGL_EXT_DESIRED,    &UserConfig.EnableMipMaps,          &InternalConfig.BuildMipMaps,            0 },
     { "GL_EXT_paletted_texture",        OGL_EXT_DESIRED,    &UserConfig.EXT_paletted_texture,   &InternalConfig.EXT_paletted_texture,    0 },
     { "GL_EXT_vertex_array",            OGL_EXT_DESIRED,    &UserConfig.EXT_vertex_array,       &InternalConfig.EXT_vertex_array,        0 },
-    { "GL_EXT_blend_func_separate",     OGL_EXT_DESIRED,    &dummyExtVariable,                  &InternalConfig.EXT_blend_func_separate, 0 },
+    { "GL_EXT_blend_func_separate",     OGL_EXT_DESIRED,    &UserConfig.EXT_blend_func_separate,&InternalConfig.EXT_blend_func_separate, OGL_VER(4, 0) },
     { "GL_ARB_imaging",                 OGL_EXT_UNUSED,     &dummyExtVariable,                  &dummyExtVariable2,                      0 },
     { "GL_ARB_texture_env_add",         OGL_EXT_UNUSED,     &dummyExtVariable,                  &dummyExtVariable2,                      0 },
     { "GL_ARB_transpose_matrix",        OGL_EXT_UNUSED,     &dummyExtVariable,                  &dummyExtVariable2,                      0 },
@@ -417,6 +417,16 @@ void GLExtensions( void )
         else
         {
             GlideMsg( "Using Palette Extension.\n" );
+        }
+    }
+    
+    if ( InternalConfig.EXT_blend_func_separate )
+    {
+        p_glBlendFuncSeparateEXT = (PFNGLBLENDFUNCSEPARATEEXTPROC) OGLGetProcAddress( "glBlendFuncSeparateEXT" );
+        if(p_glBlendFuncSeparateEXT == NULL)
+        {
+        	InternalConfig.EXT_blend_func_separate = false;
+        	Error( "Could not get address of function for glBlendFuncSeparateEXT.\n" );
         }
     }
 

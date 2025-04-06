@@ -132,6 +132,22 @@ union OGLByteColor
 */
 typedef FxU32 OGLByteColor;
 
+struct GlideTMUState
+{
+	GrTextureClampMode_t    SClampMode;
+	GrTextureClampMode_t    TClampMode;
+	GrTextureFilterMode_t   MinFilterMode;
+	GrTextureFilterMode_t   MagFilterMode;
+	GrMipMapMode_t          MipMapMode;
+	FxBool                  LodBlend;
+	GrCombineFunction_t     TextureCombineCFunction;
+	GrCombineFactor_t       TextureCombineCFactor;
+	GrCombineFunction_t     TextureCombineAFunction;
+	GrCombineFactor_t       TextureCombineAFactor;
+	FxBool                  TextureCombineRGBInvert;
+	FxBool                  TextureCombineAInvert;
+};
+
 struct GlideState
 {
     GrBuffer_t              RenderBuffer;
@@ -150,12 +166,7 @@ struct GlideState
     GrColor_t               FogColorValue;
     GrFogMode_t             FogMode;
     GrCullMode_t            CullMode;
-    GrTextureClampMode_t    SClampMode;
-    GrTextureClampMode_t    TClampMode;
-    GrTextureFilterMode_t   MinFilterMode;
-    GrTextureFilterMode_t   MagFilterMode;
-    GrMipMapMode_t          MipMapMode;
-    FxBool                  LodBlend;
+    struct GlideTMUState    tmu[GLIDE_NUM_TMU];
     GrCombineFunction_t     ColorCombineFunction;
     GrCombineFactor_t       ColorCombineFactor;
     GrCombineLocal_t        ColorCombineLocal;
@@ -166,12 +177,6 @@ struct GlideState
     GrCombineLocal_t        AlphaLocal;
     GrCombineOther_t        AlphaOther;
     FxBool                  AlphaInvert;
-    GrCombineFunction_t     TextureCombineCFunction;
-    GrCombineFactor_t       TextureCombineCFactor;
-    GrCombineFunction_t     TextureCombineAFunction;
-    GrCombineFactor_t       TextureCombineAFactor;
-    FxBool                  TextureCombineRGBInvert;
-    FxBool                  TextureCombineAInvert;
     GrOriginLocation_t      OriginInformation;
     TexSourceStruct         TexSource[GLIDE_NUM_TMU];
     GrAlphaBlendFnc_t       AlphaBlendRgbSf;
@@ -215,6 +220,15 @@ struct GlideStruct
     int                     TexelfxVersion;
 };
 
+struct OpenGLTMUStruct
+{
+	GLenum                  SClampMode;
+	GLenum                  TClampMode;
+	GLenum                  MinFilterMode;
+	GLenum                  MagFilterMode;
+  bool                    ColorTexture;
+};
+
 struct OpenGLStruct
 {
     bool                    GlideInit;
@@ -229,10 +243,7 @@ struct OpenGLStruct
     GLfloat                 DepthBiasLevel;
     GLenum                  DepthFunction;
     GLenum                  RenderBuffer;
-    GLenum                  SClampMode;
-    GLenum                  TClampMode;
-    GLenum                  MinFilterMode;
-    GLenum                  MagFilterMode;
+    struct OpenGLTMUStruct  tmu[GLIDE_NUM_TMU];
     GLenum                  TextureMode;
     GLenum                  SrcBlend;
     GLenum                  DstBlend;
@@ -253,7 +264,6 @@ struct OpenGLStruct
     OGLByteColor            ChromaColor;
     bool                    Fog;
     bool                    Texture[ GLIDE_NUM_TMU ];
-    bool                    ColorTexture;
     bool                    AlphaTexture;
     bool                    Blend;
     bool                    AlphaBuffer;

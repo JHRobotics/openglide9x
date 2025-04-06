@@ -130,10 +130,8 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
   EnterGLThread();
 
   RenderDrawTriangles( );
-    
-  int tmu = 0;
-    
-  for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+ 
+  for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
   {
     p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
 
@@ -160,16 +158,16 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     // is need, so we may need not to enable the texture
     if ( ( Glide.COther &&
            ( other == GR_COMBINE_OTHER_TEXTURE ) &&
-           ( Glide.State.TextureCombineCFunction != GR_COMBINE_FUNCTION_ZERO ) ) ||
+           ( Glide.State.tmu[tmu].TextureCombineCFunction != GR_COMBINE_FUNCTION_ZERO ) ) ||
          ( ( factor == GR_COMBINE_FACTOR_TEXTURE_ALPHA ) ||
            ( factor == GR_COMBINE_FACTOR_ONE_MINUS_TEXTURE_ALPHA ) ||
            ( factor == GR_COMBINE_FACTOR_TEXTURE_RGB ) ) )
     {
-        OpenGL.ColorTexture = true;
+        OpenGL.tmu[tmu].ColorTexture = true;
     }
     else
     {
-        OpenGL.ColorTexture = false;
+        OpenGL.tmu[tmu].ColorTexture = false;
     }
 
     if ( ( Glide.State.ColorCombineFactor == GR_COMBINE_FACTOR_TEXTURE_ALPHA ) &&
@@ -196,7 +194,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
         DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
     }
 
-    OpenGL.Texture[tmu] = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
+    OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
   }
   
   p_glActiveTextureARB( GL_TEXTURE0_ARB );
@@ -433,26 +431,21 @@ grAlphaBlendFunction( GrAlphaBlendFnc_t rgb_sf,   GrAlphaBlendFnc_t rgb_df,
     case GR_BLEND_PREFOG_COLOR:         OpenGL.DstAlphaBlend = GL_ONE;                  break;
     }
 
-  int tmu;
-  for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
-  {
-    p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
-
-//    if ( ! InternalConfig.BlendFuncSeparateEXTEnable )
-//    {
+    if ( ! InternalConfig.EXT_blend_func_separate )
+    {
         DGL(glBlendFunc)( OpenGL.SrcBlend, OpenGL.DstBlend );
-//    }
-//    else
-//    {
-//        p_glBlendFuncSeparateEXT( OpenGL.SrcBlend, OpenGL.DstBlend, 
-//                                  OpenGL.SrcAlphaBlend, OpenGL.DstAlphaBlend );
-//    }
+    }
+    else
+    {
+        p_glBlendFuncSeparateEXT( OpenGL.SrcBlend, OpenGL.DstBlend, 
+                                  OpenGL.SrcAlphaBlend, OpenGL.DstAlphaBlend );
+    }
 
     OpenGL.Blend = !(( rgb_sf == GR_BLEND_ONE ) && ( rgb_df == GR_BLEND_ZERO ));
-
-    OpenGL.Texture[tmu] = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
-  }
-  p_glActiveTextureARB(GL_TEXTURE0_ARB);
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+        OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
+    }
 
 #ifdef OPENGL_DEBUG
     GLErro( "grAlphaBlendFunction" );
@@ -493,10 +486,9 @@ grAlphaCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
         OpenGL.AlphaTexture = false;
     }
 
-    int tmu;
-    for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
     {
-        OpenGL.Texture[tmu] = ( OpenGL.ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
+        OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
     }
     LeaveGLThread();
 }

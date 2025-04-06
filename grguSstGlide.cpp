@@ -252,15 +252,24 @@ grGlideSetState( const GrState *state )
     grFogColorValue( StateTemp.FogColorValue );
     grFogMode( StateTemp.FogMode );
     grCullMode( StateTemp.CullMode );
-    grTexClampMode( GR_TMU0, StateTemp.SClampMode, StateTemp.TClampMode );
-    grTexFilterMode( GR_TMU0, StateTemp.MinFilterMode, StateTemp.MagFilterMode );
-    grTexMipMapMode( GR_TMU0, StateTemp.MipMapMode, StateTemp.LodBlend );
+    
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+    	grTexClampMode(  tmu, StateTemp.tmu[tmu].SClampMode,    StateTemp.tmu[tmu].TClampMode );
+    	grTexFilterMode( tmu, StateTemp.tmu[tmu].MinFilterMode, StateTemp.tmu[tmu].MagFilterMode );
+    	grTexMipMapMode( tmu, StateTemp.tmu[tmu].MipMapMode,    StateTemp.tmu[tmu].LodBlend );
+  	}
+    
     grColorCombine( StateTemp.ColorCombineFunction, StateTemp.ColorCombineFactor, 
                     StateTemp.ColorCombineLocal, StateTemp.ColorCombineOther, StateTemp.ColorCombineInvert );
     grAlphaCombine( StateTemp.AlphaFunction, StateTemp.AlphaFactor, StateTemp.AlphaLocal, StateTemp.AlphaOther, StateTemp.AlphaInvert );
-    grTexCombine( GR_TMU0, StateTemp.TextureCombineCFunction, StateTemp.TextureCombineCFactor,
-                  StateTemp.TextureCombineAFunction, StateTemp.TextureCombineAFactor,
-                  StateTemp.TextureCombineRGBInvert, StateTemp.TextureCombineAInvert );
+    
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+    	grTexCombine( tmu, StateTemp.tmu[tmu].TextureCombineCFunction, StateTemp.tmu[tmu].TextureCombineCFactor,
+                  StateTemp.tmu[tmu].TextureCombineAFunction, StateTemp.tmu[tmu].TextureCombineAFactor,
+                  StateTemp.tmu[tmu].TextureCombineRGBInvert, StateTemp.tmu[tmu].TextureCombineAInvert );
+    }
     grAlphaBlendFunction( StateTemp.AlphaBlendRgbSf, StateTemp.AlphaBlendRgbDf, StateTemp.AlphaBlendAlphaSf, StateTemp.AlphaBlendAlphaDf );
     grClipWindow( StateTemp.ClipMinX, StateTemp.ClipMinY, StateTemp.ClipMaxX, StateTemp.ClipMaxY );
 //  grSstOrigin( StateTemp.OriginInformation );

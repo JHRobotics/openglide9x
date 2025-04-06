@@ -150,17 +150,21 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
         m_tmu[tmu].db->WipeRange( startAddress, mip_offset, 0 );
         m_tmu[tmu].db->Add( startAddress, mip_offset, info, 0, &texNum, NULL);
 
+				p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.TClampMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.tmu[tmu].SClampMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.tmu[tmu].TClampMode );
     
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.tmu[tmu].MinFilterMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.tmu[tmu].MagFilterMode );
 
         if ( InternalConfig.EnableMipMaps && !InternalConfig.BuildMipMaps )
             DGL(glTexParameteri)( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, true );
 
         OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA, GL_UNSIGNED_BYTE, info->data );
+        
+				p_glActiveTextureARB( GL_TEXTURE0_ARB );
     }
     else
     {
@@ -389,11 +393,11 @@ bool PGTexture::MakeReady( int tmu )
                    &texNum, NULL );
 
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.TClampMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.tmu[tmu].SClampMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.tmu[tmu].TClampMode );
     
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
-        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.tmu[tmu].MinFilterMode );
+        DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.tmu[tmu].MagFilterMode );
     
         if( use_mipmap_ext )
         {
@@ -578,11 +582,11 @@ bool PGTexture::MakeReady( int tmu )
         }
     }
 
-    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.SClampMode );
-    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.TClampMode );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.tmu[tmu].SClampMode );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, OpenGL.tmu[tmu].TClampMode );
     
-    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.MinFilterMode );
-    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.MagFilterMode );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.tmu[tmu].MinFilterMode );
+    DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.tmu[tmu].MagFilterMode );
     
     return false;
 }
