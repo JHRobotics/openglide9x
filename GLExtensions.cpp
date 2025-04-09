@@ -425,8 +425,8 @@ void GLExtensions( void )
         p_glBlendFuncSeparateEXT = (PFNGLBLENDFUNCSEPARATEEXTPROC) OGLGetProcAddress( "glBlendFuncSeparateEXT" );
         if(p_glBlendFuncSeparateEXT == NULL)
         {
-        	InternalConfig.EXT_blend_func_separate = false;
-        	Error( "Could not get address of function for glBlendFuncSeparateEXT.\n" );
+            InternalConfig.EXT_blend_func_separate = false;
+            Error( "Could not get address of function for BlendFuncSeparateEXT.\n" );
         }
     }
 

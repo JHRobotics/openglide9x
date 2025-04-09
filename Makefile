@@ -1,6 +1,6 @@
 include config.mk
 
-DEPS = config.mk Makefile GLconf.h
+DEPS = config.mk Makefile GLconf.h Glextensions.h GlOgl.h
 
 # only usefull with gcc/mingw
 CSTD=c99
@@ -102,7 +102,7 @@ else
   endif
   
   ifdef DEBUG
-    DD_DEFS = -DDEBUG -DOGL_NOTDONE -DOGL_DEBUG
+    DD_DEFS = -DDEBUG -DOGL_CRITICAL -DOGL_NOTDONE -DOGL_DEBUG
     #  -DOGL_DONE -DOGL_PARTDONE -DOGL_COMBINE
   else
     DD_DEFS = -DNDEBUG

@@ -244,6 +244,10 @@ GrTextureFormat_t ParseTextureFormat( const char * text )
     {
         return GR_TEXFMT_AYIQ_8422;
     }
+    if ( !strcmp( text, "a8\n" ) )
+    {
+        return GR_TEXFMT_ALPHA_8;
+    }
 
     return 0;
 }

@@ -106,6 +106,7 @@ bool InitWindow( FxU hWnd )
     GlideMsg( "Wrap 565 to 5551 = %s\n", InternalConfig.Wrap565to5551 ? "true" : "false" );
     GlideMsg( "Texture Memory Size = %d Mb\n", InternalConfig.TextureMemorySize );
     GlideMsg( "Frame Buffer Memory Size = %d Mb\n", InternalConfig.FrameBufferMemorySize );
+    GlideMsg( "Number of TMUs = %d\n", InternalConfig.NumTMU );
     GlideMsg( "MMX is %s\n", InternalConfig.MMXEnable ? "present" : "not present" );
     GlideMsg( OGL_LOG_SEPARATE );
 

@@ -110,6 +110,7 @@ struct TexSourceStruct
     FxU32       StartAddress;
     FxU32       EvenOdd;
     GrTexInfo   Info;
+    FxBool      Valid;
 };
 
 /*
@@ -148,8 +149,11 @@ struct GlideTMUState
 	FxBool                  TextureCombineAInvert;
 };
 
+#define GLIDESTATE_MAGIC 0x003DD0D0
+
 struct GlideState
 {
+	  FxU32                   Magic;
     GrBuffer_t              RenderBuffer;
     GrDepthBufferMode_t     DepthBufferMode;
     GrCmpFnc_t              DepthFunction;
@@ -203,7 +207,7 @@ struct GlideStruct
     int                     AuxBuffers;
     // States and Constants
     FxU8                    FogTable[ GR_FOG_TABLE_SIZE + 1 ];
-    FxU32                   TexMemoryMaxPosition;
+//    FxU32                   TexMemoryMaxPosition;
     FxU32                   TexMemoryPerTMU;
     bool                    CLocal;
     bool                    COther;

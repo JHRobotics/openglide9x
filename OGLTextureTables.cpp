@@ -1,7 +1,7 @@
 
 #include "OGLTables.h"
 
-
+#if 1
 OGLAspect texAspects[ 7 ] =
 {
     { D8OVER256, D1OVER256 }, // GR_ASPECT_8x1
@@ -12,6 +12,18 @@ OGLAspect texAspects[ 7 ] =
     { D1OVER256, D4OVER256 }, // GR_ASPECT_1x4
     { D1OVER256, D8OVER256 }  // GR_ASPECT_1x8
 };
+#else
+OGLAspect texAspects[ 7 ] =
+{
+    { D8OVER256, D1OVER256 }, // GR_ASPECT_8x1
+    { D4OVER256, D1OVER256 }, // GR_ASPECT_4x1
+    { D2OVER256, D1OVER256 }, // GR_ASPECT_2x1
+    { D1OVER256, D1OVER256 }, // GR_ASPECT_1x1
+    { D1OVER256/2, D1OVER256 }, // GR_ASPECT_1x2
+    { D1OVER256/4, D1OVER256 }, // GR_ASPECT_1x4
+    { D1OVER256/8, D1OVER256 }  // GR_ASPECT_1x8
+};
+#endif
 
 OGLTexInfo texInfo[ 7 ][ 9 ] =
 {

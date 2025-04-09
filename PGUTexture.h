@@ -49,18 +49,23 @@ public:
 
 private:
 
-    enum { MAX_MM = 1024 };
+    enum { MAX_MM = 1024*GLIDE_NUM_TMU };
 
+		GrChipID_t      mm_tmu [MAX_MM];
 #ifndef GLIDE3
+
     GrMipMapInfo    mm_info[ MAX_MM ];
 #else
 GrMipMapInfoInternal mm_info[ MAX_MM ];
 #endif
 
-    FxU32           mm_start[ MAX_MM ];
-    FxU32           m_free_mem;
+    FxU32           mm_start[ GLIDE_NUM_TMU ][ MAX_MM ];
+    FxU32           m_free_mem[ GLIDE_NUM_TMU ];
     GrMipMapId_t    m_free_id;
-    GrMipMapId_t    m_current_id;
+    GrMipMapId_t    m_current_id[ GLIDE_NUM_TMU ];
+    
+    FxU32           AbsTMUAddr(GrChipID_t tmu, GrMipMapId_t mmid);
+    
 };
 
 extern PGUTexture UTextures;

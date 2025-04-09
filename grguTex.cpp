@@ -26,25 +26,39 @@ FX_ENTRY FxU32 FX_CALL
 grTexMinAddress( GrChipID_t tmu )
 {
 #ifdef OGL_DONE
-    GlideMsg( "grTexMinAddress( %d ) = %lu\n", tmu, Glide.TexMemoryPerTMU * tmu);
+    GlideMsg( "grTexMinAddress( %d )", tmu);
 #endif
     if(tmu >= InternalConfig.NumTMU) return 0;
 
+#if 0
     return Glide.TexMemoryPerTMU * tmu;
+#else
+		return 0;
+#endif
 }
 
 //*************************************************
 //* Return the highest start address for texture downloads
 //*************************************************
+/*
+  From manual:
+  grTexMaxAddress() returns the last possible appropriately aligned address that can be used as a
+  starting address; only the smallest possible texture can be loaded there: the 1x1 texture
+  GR_LOD_LOG2_1.
+*/
 FX_ENTRY FxU32 FX_CALL
 grTexMaxAddress( GrChipID_t tmu )
 {
 #ifdef OGL_DONE
-    GlideMsg( "grTexMaxAddress( %d ) = %lu\n", tmu, Glide.TexMemoryPerTMU * (tmu+1) );
+    GlideMsg( "grTexMaxAddress( %d )", tmu );
 #endif
     if(tmu >= InternalConfig.NumTMU) return 0;
 
-    return (Glide.TexMemoryPerTMU * (tmu+1) - 1);
+#if 0
+    return (Glide.TexMemoryPerTMU * (tmu+1) - GLIDE_TEXTURE_ALIGN);
+#else
+		return Glide.TexMemoryPerTMU - GLIDE_TEXTURE_ALIGN;
+#endif
 }
 
 static FxU32 relativeTMUAddress(GrChipID_t tmu, FxU32 addr)
@@ -83,12 +97,13 @@ grTexSource( GrChipID_t tmu,
 		if(!(startAddress >= grTexMinAddress(tmu) && startAddress <= grTexMaxAddress(tmu)))
 		{
     	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	GlideMsg("Call from 0x%X\n", __builtin_extract_return_addr (__builtin_return_address(0)));
     	LeaveGLThread();
 			return;
 		}
 		FxU32 relative = relativeTMUAddress(tmu, startAddress);
 
-    Glide.State.TexSource[tmu].StartAddress = relative;
+    Glide.State.TexSource[tmu].StartAddress = startAddress;
     Glide.State.TexSource[tmu].EvenOdd = evenOdd;
     Glide.State.TexSource[tmu].Info.format = info->format;
 #ifdef GLIDE3
@@ -101,7 +116,7 @@ grTexSource( GrChipID_t tmu,
     Glide.State.TexSource[tmu].Info.smallLod = info->smallLod;
 #endif
 
-    Textures->Source(tmu, relative, evenOdd, info );    
+    Glide.State.TexSource[tmu].Valid = Textures->Source(tmu, relative, evenOdd, info);
 
     LeaveGLThread();
 }
@@ -146,6 +161,7 @@ grTexDownloadMipMap( GrChipID_t tmu,
 		if(!(startAddress >= grTexMinAddress(tmu) && startAddress <= grTexMaxAddress(tmu)))
 		{
     	GlideMsg("%s, TMU: %d: WRONG memory address (%x)!\n", __FUNCTION__, tmu, startAddress);
+    	GlideMsg("Min %x, Max %x\n", grTexMinAddress(tmu), grTexMaxAddress(tmu));
     	LeaveGLThread();
 			return;
 		}
@@ -268,13 +284,15 @@ grTexClampMode( GrChipID_t tmu,
 
     switch ( s_clampmode )
     {
-    case GR_TEXTURECLAMP_CLAMP:     OpenGL.tmu[tmu].SClampMode = GL_CLAMP_TO_EDGE;   break;
-    case GR_TEXTURECLAMP_WRAP:      OpenGL.tmu[tmu].SClampMode = GL_REPEAT;  break;
+    case GR_TEXTURECLAMP_CLAMP:       OpenGL.tmu[tmu].SClampMode = GL_CLAMP_TO_EDGE;   break;
+    case GR_TEXTURECLAMP_WRAP:        OpenGL.tmu[tmu].SClampMode = GL_REPEAT;  break;
+    case GR_TEXTURECLAMP_MIRROR_EXT:  OpenGL.tmu[tmu].SClampMode = GL_MIRRORED_REPEAT; break;
     }
     switch ( t_clampmode )
     {
-    case GR_TEXTURECLAMP_CLAMP:     OpenGL.tmu[tmu].TClampMode = GL_CLAMP_TO_EDGE;   break;
-    case GR_TEXTURECLAMP_WRAP:      OpenGL.tmu[tmu].TClampMode = GL_REPEAT;  break;
+    case GR_TEXTURECLAMP_CLAMP:       OpenGL.tmu[tmu].TClampMode = GL_CLAMP_TO_EDGE;   break;
+    case GR_TEXTURECLAMP_WRAP:        OpenGL.tmu[tmu].TClampMode = GL_REPEAT;  break;
+    case GR_TEXTURECLAMP_MIRROR_EXT:  OpenGL.tmu[tmu].TClampMode = GL_MIRRORED_REPEAT; break;
     }
 
 #ifdef OPENGL_DEBUG
@@ -501,9 +519,8 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
 
     if ( InternalConfig.EXT_texture_lod_bias )
     {
-    	  p_glActiveTextureARB(GL_TEXTURE0_ARB + tmu);
+    	  p_glActiveTextureARB( OGLUnit(tmu) );
         DGL(glTexEnvf)( GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, bias );
-        p_glActiveTextureARB(GL_TEXTURE0_ARB);
     }
 
     LeaveGLThread();
@@ -833,6 +850,10 @@ grTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
             GR_COMBINE_FUNCTION_ZERO, GR_COMBINE_FACTOR_ZERO, FXTRUE, FXTRUE );
         break;
 
+    default:
+        GlideMsg( "grTexCombineFunction: not handled func=%d, tmu=%d\n", func, tmu);
+        break;
+
 //  case GR_TEXTURECOMBINE_DETAIL:          // blend (Cother, Clocal) detail textures with detail on selected TMU
 //  case GR_TEXTURECOMBINE_DETAIL_OTHER:    // blend (Cother, Clocal) detail textures with detail on neighboring TMU
 //  case GR_TEXTURECOMBINE_TRILINEAR_ODD:   // blend (Cother, Clocal) LOD blended textures with odd levels on selected TMU
@@ -903,6 +924,10 @@ guTexCombineFunction( GrChipID_t tmu, GrTextureCombineFnc_t func )
     case GR_TEXTURECOMBINE_ONE:             // 255 0xFF per component
         grTexCombine( tmu, GR_COMBINE_FUNCTION_ZERO, GR_COMBINE_FACTOR_ZERO,
             GR_COMBINE_FUNCTION_ZERO, GR_COMBINE_FACTOR_ZERO, FXTRUE, FXTRUE );
+        break;
+
+    default:
+        GlideMsg( "guTexCombineFunction: not handled func=%d, tmu=%d\n", func, tmu);
         break;
 
 //  case GR_TEXTURECOMBINE_DETAIL:          // blend (Cother, Clocal) detail textures with detail on selected TMU

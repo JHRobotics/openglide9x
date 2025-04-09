@@ -70,14 +70,14 @@ GrTexInfo * TexDB::Find( FxU32 startAddress, GrTexInfo *info, FxU32 hash,
                 *pal_change = true;
             }
 
-#ifdef OGL_UTEX
+#ifdef OGL_UTEX1
             GlideMsg( "Found tex %d\n", r->texNum );
 #endif
             return &r->info;
         }
     }
 
-#ifdef OGL_UTEX
+#ifdef OGL_UTEX1
     GlideMsg( "Tex not found\n" );
 #endif
 
@@ -125,7 +125,7 @@ void TexDB::WipeRange(FxU32 startAddress, FxU32 endAddress, FxU32 hash)
                  ( ( hash == 0 ) || ( r->hash == hash ) ) )
             {
                 *p = r->next;
-#ifdef OGL_UTEX
+#ifdef OGL_UTEX1
                 GlideMsg( "Wipe tex %d\n", r->texNum );
 #endif
                 delete r;
@@ -153,7 +153,7 @@ void TexDB::Add( FxU32 startAddress, FxU32 endAddress, GrTexInfo *info, FxU32 ha
     r->next = m_first[ sect ];
     m_first[ sect ] = r;
 
-#ifdef OGL_UTEX
+#ifdef OGL_UTEX1
     GlideMsg( "Add tex %d\n", r->texNum );
 #endif
 

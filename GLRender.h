@@ -24,6 +24,9 @@
 // Structs
 //**************************************************************
 
+#pragma pack(push)
+#pragma pack(1)
+
 struct GlVertex
 {
 	GLfloat x, y, z;
@@ -57,19 +60,20 @@ struct TVertexStruct
 	GLfloat cx, cy, cz, cw;
 };
 
+/* JH: in OpenGL docs language, there are s, t, r and q texture coordinates */
 struct TTextureStruct
 {
 	GLfloat as, at, aq, aoow;
 	GLfloat bs, bt, bq, boow;
 	GLfloat cs, ct, cq, coow;
 	
-#if GLIDE_NUM_TMU > 1
+#if GLIDE_NUM_TMU >= 2
 	GLfloat as1, at1, aq1, aoow1;
 	GLfloat bs1, bt1, bq1, boow1;
 	GLfloat cs1, ct1, cq1, coow1;
 #endif
 
-#if GLIDE_NUM_TMU > 2
+#if GLIDE_NUM_TMU >= 3
 	GLfloat as2, at2, aq2, aoow2;
 	GLfloat bs2, bt2, bq2, boow2;
 	GLfloat cs2, ct2, cq2, coow2;
@@ -83,6 +87,8 @@ struct TFogStruct
 	GLfloat bf;
 	GLfloat cf;
 };
+
+#pragma pack(push)
 
 struct RenderStruct
 {

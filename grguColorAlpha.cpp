@@ -133,7 +133,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
  
   for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
   {
-    p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+    p_glActiveTextureARB( OGLUnit(tmu) );
 
     Glide.State.ColorCombineFunction    = function;
     Glide.State.ColorCombineFactor      = factor;
@@ -196,8 +196,6 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
 
     OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
   }
-  
-  p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
   LeaveGLThread();
 }

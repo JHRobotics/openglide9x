@@ -150,7 +150,7 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
         m_tmu[tmu].db->WipeRange( startAddress, mip_offset, 0 );
         m_tmu[tmu].db->Add( startAddress, mip_offset, info, 0, &texNum, NULL);
 
-				p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
+				p_glActiveTextureARB( OGLUnit(tmu) );
 
         DGL(glBindTexture)( GL_TEXTURE_2D, texNum );
         DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, OpenGL.tmu[tmu].SClampMode );
@@ -163,8 +163,6 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
             DGL(glTexParameteri)( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, true );
 
         OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA, GL_UNSIGNED_BYTE, info->data );
-        
-				p_glActiveTextureARB( GL_TEXTURE0_ARB );
     }
     else
     {
@@ -242,8 +240,8 @@ void PGTexture::DownloadMipMapPartial( GrChipID_t tmu, FxU32 startAddress, FxU32
     }
 }
 
-void PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
-{
+FxBool PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info )
+{	
     m_tmu[tmu].startAddress = startAddress;
     m_tmu[tmu].evenOdd = evenOdd;
     m_tmu[tmu].info = *info;
@@ -257,6 +255,13 @@ void PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTex
 #endif
 
     m_tmu[tmu].valid = ( ( startAddress + TextureMemRequired( evenOdd, info ) ) <= m_tex_memory_size );
+
+    return m_tmu[tmu].valid ? FXTRUE : FXFALSE;
+}
+
+void PGTexture::Invalidate( GrChipID_t tmu)
+{
+	m_tmu[tmu].valid = false;
 }
 
 void PGTexture::DownloadTable( GrTexTable_t type, FxU32 *data, int first, int count )
@@ -310,11 +315,45 @@ bool PGTexture::MakeReady( int tmu )
     bool        * pal_change_ptr;
     bool        use_mipmap_ext;
     bool        use_mipmap_ext2;
+    bool        combine_units = false;
+    
+    p_glActiveTextureARB(OGLUnit(tmu));
 
-    if( ! m_tmu[tmu].valid )
+    DGL(glDisable)(GL_TEXTURE_2D);
+    if(!OpenGL.Texture[tmu])
+    {
+    	return false;
+    }
+
+#if 0
+    if(tmu == 1)
+    {
+    	return false;
+    }
+#endif
+
+    if(!m_tmu[tmu].valid)
     {
         return false;
     }
+    
+    /* configuration to combine TMU for different mimmaps level */
+    if(m_tmu[0].valid && m_tmu[1].valid)
+    {
+    	if(m_tmu[0].evenOdd == GR_MIPMAPLEVELMASK_EVEN && m_tmu[1].evenOdd == GR_MIPMAPLEVELMASK_ODD)
+    	{
+    		if(tmu == 1)
+    		{
+    			return true;
+    		}
+    		else
+    		{
+    			combine_units = true;
+    		}
+    	}
+    }
+
+    DGL(glEnable)(GL_TEXTURE_2D);
 
     test_hash        = 0;
     wipe_hash        = 0;
@@ -528,8 +567,9 @@ bool PGTexture::MakeReady( int tmu )
             break;
             
         case GR_TEXFMT_ALPHA_8:
-            ConvertA8toAP88( (FxU8*)data, (FxU16*)m_tex_temp, texVals.nPixels );
-            OGL_LOAD_CREATE_TEXTURE( 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_tex_temp );
+            //ConvertA8toAP88( (FxU8*)data, (FxU16*)m_tex_temp, texVals.nPixels );
+            //OGL_LOAD_CREATE_TEXTURE( 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_tex_temp );
+            OGL_LOAD_CREATE_TEXTURE( GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, data );
             break;
             
         case GR_TEXFMT_ALPHA_INTENSITY_88:
@@ -588,7 +628,7 @@ bool PGTexture::MakeReady( int tmu )
     DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, OpenGL.tmu[tmu].MinFilterMode );
     DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, OpenGL.tmu[tmu].MagFilterMode );
     
-    return false;
+    return true;
 }
 
 FxU32 PGTexture::LodOffset( FxU32 evenOdd, GrTexInfo *info )

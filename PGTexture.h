@@ -39,7 +39,8 @@ public:
     static FxU32 TextureMemRequired( FxU32 evenOdd, GrTexInfo *info );
     bool MakeReady( int tmu );
     void DownloadTable( GrTexTable_t type, FxU32 *data, int first, int count );
-    void Source(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info );
+    FxBool Source(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info );
+    void Invalidate( GrChipID_t tmu);
     void DownloadMipMap(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info );
     void DownloadMipMapPartial(GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrTexInfo *info, int start, int end );
     FxU32 GetMemorySize( void );

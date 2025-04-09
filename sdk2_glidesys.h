@@ -114,9 +114,12 @@ n** -----------------------------------------------------------------------
 #  define GLIDE_NUM_TMU 2
 #endif
 
-
 #if ( ( GLIDE_NUM_TMU <= 0 ) && ( GLIDE_NUM_TMU > 3 ) )
 #  error "GLIDE_NUM_TMU set to an invalid value"
+#endif
+
+#ifndef GLIDE_TEXTURE_ALIGN
+#  define GLIDE_TEXTURE_ALIGN 8
 #endif
 
 #endif /* __GLIDESYS_H__ */

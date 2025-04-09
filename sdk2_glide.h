@@ -380,6 +380,7 @@ typedef FxI32 GrSmoothingMode_t;
 typedef FxI32 GrTextureClampMode_t;
 #define GR_TEXTURECLAMP_WRAP    0x0
 #define GR_TEXTURECLAMP_CLAMP   0x1
+#define GR_TEXTURECLAMP_MIRROR_EXT  0x2
 
 typedef FxI32 GrTextureCombineFnc_t;
 #define GR_TEXTURECOMBINE_ZERO          0x0 /* texout = 0 */

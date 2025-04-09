@@ -330,6 +330,9 @@ grLfbUnlock( GrLock_t dwType, GrBuffer_t dwBuffer )
             FxU32 xsize = maxx - minx;
             FxU32 ysize = maxy - miny;
 
+            //p_glActiveTextureARB( GL_TEXTURE0_ARB );
+            OGLOne2DUnit( GL_TEXTURE0 );
+
             // Draw a textured quad
             DGL(glPushAttrib)( GL_COLOR_BUFFER_BIT|GL_TEXTURE_BIT|GL_DEPTH_BUFFER_BIT );
 
@@ -344,7 +347,7 @@ grLfbUnlock( GrLock_t dwType, GrBuffer_t dwBuffer )
 
             DGL(glDepthMask)( GL_FALSE );
             DGL(glDisable)( GL_DEPTH_TEST );
-
+            GlideMsg("%s:%d: glBindTexture\n", __FILE__, __LINE__);
             DGL(glBindTexture)( GL_TEXTURE_2D, Glide.LFBTexture );
             DGL(glTexSubImage2D)( GL_TEXTURE_2D, 0, 0, 0, Glide.WindowWidth, ysize, GL_RGBA,
                 GL_UNSIGNED_BYTE, OpenGL.tmpBuf + ( miny * Glide.WindowWidth ) );

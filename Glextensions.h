@@ -17,6 +17,8 @@
 #include <GL/glext.h>
 #endif
 
+#include <math.h>
+
 void ValidateUserConfig();
 
 // Extensions Functions Declarations
@@ -45,5 +47,58 @@ extern PFNGLBLENDFUNCSEPARATEEXTPROC            p_glBlendFuncSeparateEXT;
 
 
 void APIENTRY DummyV( const void *a );
+
+inline GLenum OGLUnit(int tmu)
+{
+#if 0
+#if GLIDE_NUM_TMU >= 3
+	switch(tmu)
+	{
+		case 2: return GL_TEXTURE0;
+		case 1: return GL_TEXTURE1;
+		case 0: return GL_TEXTURE2;
+	}
+#elif GLIDE_NUM_TMU == 2
+	switch(tmu)
+	{
+		case 1: return GL_TEXTURE0;
+		case 0: return GL_TEXTURE1;
+	}
+#endif
+
+	return GL_TEXTURE0;
+#else
+	return GL_TEXTURE0+tmu;
+#endif
+}
+
+inline void OGLOne2DUnit(GLenum unit)
+{
+#if GLIDE_NUM_TMU >= 3
+	p_glActiveTextureARB(GL_TEXTURE2);
+	DGL(glDisable)(GL_TEXTURE_2D);
+#endif
+#if GLIDE_NUM_TMU >= 2
+	p_glActiveTextureARB(GL_TEXTURE1);
+	DGL(glDisable)(GL_TEXTURE_2D);
+#endif
+	p_glActiveTextureARB(GL_TEXTURE0);
+	DGL(glDisable)(GL_TEXTURE_2D);
+
+	p_glActiveTextureARB(unit);
+	DGL(glEnable)(GL_TEXTURE_2D);
+}
+
+inline void OGLCoords4(int tmu, GLfloat *vect)
+{
+	if(p_glMultiTexCoord4fvARB)
+	{
+		p_glMultiTexCoord4fvARB(OGLUnit(tmu), vect);
+	}
+	else if(tmu == GR_TMU0)
+	{
+		DGL(glTexCoord4fv)(vect);
+	}
+}
 
 #endif

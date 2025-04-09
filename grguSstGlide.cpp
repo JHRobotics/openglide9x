@@ -4,6 +4,7 @@
 #include "GLRender.h"
 #include "PGTexture.h"
 #include "OGLTables.h"
+#include "Glextensions.h"
 
 static bool InterpretScreenResolution(GrScreenResolution_t eResolution, FxU32 &width, FxU32 &height)
 {
@@ -110,6 +111,7 @@ grGlideInit( void )
 
     Glide.ActiveVoodoo      = 0;
     Glide.State.VRetrace    = FXFALSE;
+    Glide.State.Magic       = GLIDESTATE_MAGIC;
 
     ExternErrorFunction = NULL;
 
@@ -123,16 +125,6 @@ grGlideInit( void )
     OpenGL.GlideInit = true;
 
     RenderInitialize( );
-
-    Glide.TextureMemory = UserConfig.TextureMemorySize * 1024 * 1024 * UserConfig.NumTMU;
-    Glide.TexMemoryMaxPosition   = (FxU32)Glide.TextureMemory;
-    Glide.TexMemoryPerTMU        = UserConfig.TextureMemorySize * 1024 * 1024;
-
-    Textures = new PGTexture( UserConfig.NumTMU, Glide.TexMemoryPerTMU );
-    if ( Textures == NULL )
-    {
-        Error( "Cannot allocate enough memory for Texture Buffer in User setting, using default" );
-    }
 
     InternalConfig.NoSplash      = UserConfig.NoSplash;
     InternalConfig.ShamelessPlug = UserConfig.ShamelessPlug;
@@ -182,6 +174,18 @@ grGlideInit( void )
   			Glide.TexelfxVersion = 2;
   			break;
   	}
+  	
+    Glide.TextureMemory    = UserConfig.TextureMemorySize * 1024 * 1024; // * UserConfig.NumTMU;
+    Glide.TexMemoryPerTMU  = Glide.TextureMemory / InternalConfig.NumTMU;
+    
+     GlideMsg( "grGlideInit( TMUs=%d, MemoryPerTMU=%d )\n", InternalConfig.NumTMU, Glide.TexMemoryPerTMU);
+
+    Textures = new PGTexture( InternalConfig.NumTMU, Glide.TexMemoryPerTMU );
+    if ( Textures == NULL )
+    {
+        Error( "Cannot allocate enough memory for Texture Buffer in User setting, using default" );
+    }
+
  
     LeaveGLThread();   
 }
@@ -230,9 +234,18 @@ grGlideSetState( const GrState *state )
     GlideMsg( "grGlideSetState( --- )\n" );
 #endif
     EnterGLThread();
+    
+    if(*((FxU32*)state) != GLIDESTATE_MAGIC )
+    {
+    	GlideMsg( "grGlideSetState(%p): invalid state\n", state );
+    	LeaveGLThread();
+    	return;
+    }
 
     GlideState StateTemp;
 
+		//memset(&Glide.State, 0, sizeof(GlideState));
+		Glide.State.Magic = GLIDESTATE_MAGIC;
     CopyMemory( &StateTemp, state, sizeof( GlideState ) );
 
     Glide.State.ColorFormat = StateTemp.ColorFormat;
@@ -272,8 +285,18 @@ grGlideSetState( const GrState *state )
     }
     grAlphaBlendFunction( StateTemp.AlphaBlendRgbSf, StateTemp.AlphaBlendRgbDf, StateTemp.AlphaBlendAlphaSf, StateTemp.AlphaBlendAlphaDf );
     grClipWindow( StateTemp.ClipMinX, StateTemp.ClipMinY, StateTemp.ClipMaxX, StateTemp.ClipMaxY );
-//  grSstOrigin( StateTemp.OriginInformation );
-//  grTexSource( GR_TMU0, StateTemp.TexSource.StartAddress, StateTemp.TexSource.EvenOdd, &StateTemp.TexSource.Info );
+    grSstOrigin( StateTemp.OriginInformation );
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+    	if(StateTemp.TexSource[tmu].Valid)
+    	{
+    		grTexSource( tmu, StateTemp.TexSource[tmu].StartAddress, StateTemp.TexSource[tmu].EvenOdd, &StateTemp.TexSource[tmu].Info );
+    	}
+    	else
+    	{
+    		Textures->Invalidate(tmu);
+    	}
+    }
 
     LeaveGLThread();
 }
@@ -326,9 +349,12 @@ static void grDefaults(GrOriginLocation_t org_loc)
     // All should be disabled
     //depth buffering, fog, chroma-key, alpha blending, alpha testing
     grSstOrigin( org_loc );
-    grTexClampMode( 0, GR_TEXTURECLAMP_WRAP, GR_TEXTURECLAMP_WRAP );
-    grTexMipMapMode( 0, GR_MIPMAP_DISABLE, FXFALSE );
-    grTexFilterMode( 0, GR_TEXTUREFILTER_BILINEAR, GR_TEXTUREFILTER_BILINEAR );
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+        grTexClampMode( tmu, GR_TEXTURECLAMP_WRAP, GR_TEXTURECLAMP_WRAP );
+        grTexMipMapMode( tmu, GR_MIPMAP_DISABLE, FXFALSE );
+        grTexFilterMode( tmu, GR_TEXTUREFILTER_BILINEAR, GR_TEXTUREFILTER_BILINEAR );
+    }
     grChromakeyMode( GR_CHROMAKEY_DISABLE );
     grFogMode( GR_FOG_DISABLE );
     grCullMode( GR_CULL_DISABLE );
@@ -345,8 +371,11 @@ static void grDefaults(GrOriginLocation_t org_loc)
                     GR_COMBINE_LOCAL_NONE,
                     GR_COMBINE_OTHER_CONSTANT,
                     FXFALSE );
-    grTexCombine( GR_TMU0,GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE,
+    for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
+    {
+    	grTexCombine( tmu,GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE,
                 GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_NONE, FXFALSE, FXFALSE );
+    }
     grAlphaControlsITRGBLighting( FXFALSE );
     grAlphaBlendFunction( GR_BLEND_ONE, GR_BLEND_ZERO, GR_BLEND_ONE, GR_BLEND_ZERO );
     grColorMask( FXTRUE, FXFALSE );
@@ -477,6 +506,9 @@ FX_ENTRY FxU32 FX_CALL grSstWinOpen(   FxU hwnd,
     Glide.LFBTextureSize = 2 << int_log2(Glide.WindowWidth > Glide.WindowHeight ? (Glide.WindowWidth-1) : (Glide.WindowHeight-1));
 
     DGL(glGenTextures)( 1, &Glide.LFBTexture );
+    //p_glActiveTextureARB( GL_TEXTURE0_ARB );
+    OGLOne2DUnit(GL_TEXTURE0);
+    GlideMsg("%s:%d: glBindTexture\n", __FILE__, __LINE__);
     DGL(glBindTexture)( GL_TEXTURE_2D, Glide.LFBTexture );
     if ( OpenGL.WindowTotalPixels != Glide.WindowTotalPixels ) {
         DGL(glTexParameteri)( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );

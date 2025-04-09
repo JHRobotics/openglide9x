@@ -431,21 +431,27 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 		FxU32 argb = *((FxU32*)(mem+VXLPosition[GR_PARAM_POS_PARGB]));
 		ConvertColorF2(argb, v->r, v->g, v->b, v->a);
 	}
-	
-	VXLGetFloat(v->tmuvtx[0].oow, GR_PARAM_POS_Q0,  0);
+
+	VXLGetFloat(v->tmuvtx[0].oow, GR_PARAM_POS_Q0,  0);	
 	VXLGetFloat(v->tmuvtx[0].sow, GR_PARAM_POS_ST0, 0);
 	VXLGetFloat(v->tmuvtx[0].tow, GR_PARAM_POS_ST0, 1);
 	
-#if GLIDE_NUM_TMU > 1
-	VXLGetFloat(v->tmuvtx[1].oow, GR_PARAM_POS_Q1,  0);
-	VXLGetFloat(v->tmuvtx[1].sow, GR_PARAM_POS_ST1, 0);
-	VXLGetFloat(v->tmuvtx[1].tow, GR_PARAM_POS_ST1, 1);
+#if GLIDE_NUM_TMU >= 2
+	if(InternalConfig.NumTMU >= 2)
+	{
+		VXLGetFloat(v->tmuvtx[1].oow, GR_PARAM_POS_Q1,  0);
+		VXLGetFloat(v->tmuvtx[1].sow, GR_PARAM_POS_ST1, 0);
+		VXLGetFloat(v->tmuvtx[1].tow, GR_PARAM_POS_ST1, 1);
+	}
 #endif
 	
-#if GLIDE_NUM_TMU > 2
-	VXLGetFloat(v->tmuvtx[2].oow, GR_PARAM_POS_Q2,  0);
-	VXLGetFloat(v->tmuvtx[2].sow, GR_PARAM_POS_ST2, 0);
-	VXLGetFloat(v->tmuvtx[2].tow, GR_PARAM_POS_ST2, 1);
+#if GLIDE_NUM_TMU >= 3
+	if(InternalConfig.NumTMU >= 3)
+	{
+		VXLGetFloat(v->tmuvtx[2].oow, GR_PARAM_POS_Q2,  0);
+		VXLGetFloat(v->tmuvtx[2].sow, GR_PARAM_POS_ST2, 0);
+		VXLGetFloat(v->tmuvtx[2].tow, GR_PARAM_POS_ST2, 1);
+	}
 #endif
 
 	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
@@ -473,22 +479,45 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 			v->a *= 255.f;
 		}
 		
-		//v->tmuvtx[0].oow = v->tmuvtx[0].oow * q * 256.0f;
-		v->tmuvtx[0].sow = v->tmuvtx[0].sow * q * 256.0f;
-		v->tmuvtx[0].tow = v->tmuvtx[0].tow * q * 256.0f;
-		
-#if GLIDE_NUM_TMU > 1
-		//v->tmuvtx[1].oow = v->tmuvtx[1].oow * 65535.f;
-		v->tmuvtx[1].sow = v->tmuvtx[1].sow * q * 256.0f;
-		v->tmuvtx[1].tow = v->tmuvtx[1].tow * q * 256.0f;
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0) != 0)
+		{
+			//v->tmuvtx[0].oow = v->tmuvtx[0].oow * q; // * 256.0f;
+			v->tmuvtx[0].oow = 1.f / v->tmuvtx[0].oow;
+		}
+		else
+		{
+			v->tmuvtx[0].oow = q;
+		}
+		v->tmuvtx[0].sow = v->tmuvtx[0].sow * v->tmuvtx[0].oow * 256.0f;
+		v->tmuvtx[0].tow = v->tmuvtx[0].tow * v->tmuvtx[0].oow * 256.0f;
+
+#if GLIDE_NUM_TMU >= 2
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1) != 0)
+		{
+			//v->tmuvtx[1].oow = v->tmuvtx[1].oow * q; // * 256.0f;
+			v->tmuvtx[1].oow = 1.f / v->tmuvtx[1].oow;
+		}
+		else
+		{
+			v->tmuvtx[1].oow = v->tmuvtx[0].oow;
+		}
+		v->tmuvtx[1].sow = v->tmuvtx[1].sow * v->tmuvtx[1].oow * 256.0f;
+		v->tmuvtx[1].tow = v->tmuvtx[1].tow * v->tmuvtx[1].oow * 256.0f;
 #endif
-		
-#if GLIDE_NUM_TMU > 2
-		//v->tmuvtx[2].oow = v->tmuvtx[2].oow * 65535.f;
-		v->tmuvtx[2].sow = v->tmuvtx[2].sow * q * 256.0f;
-		v->tmuvtx[2].tow = v->tmuvtx[2].tow * q * 256.0f;
+
+#if GLIDE_NUM_TMU >= 3
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2) != 0)
+		{
+			//v->tmuvtx[2].oow = v->tmuvtx[2].oow * q; // * 256.0f;
+			v->tmuvtx[2].oow = 1.f / v->tmuvtx[2].oow;
+		}
+		else
+		{
+			v->tmuvtx[2].oow = v->tmuvtx[1].oow;
+		}
+		v->tmuvtx[2].sow = v->tmuvtx[2].sow * v->tmuvtx[2].oow * 256.0f;
+		v->tmuvtx[2].tow = v->tmuvtx[2].tow * v->tmuvtx[2].oow * 256.0f;
 #endif
-		
 	}
 }
 
@@ -928,7 +957,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/* 1 4
 			The total number of bytes per Texelfx chip if a non-UMA configuration is used, else FXFALSE. In non-UMA configurations, the total usable texture memory is GR_MEMORY_TMU * GR_NUM_TMU.*/
 			//return grGet_fill_num(plength, params, UserConfig.TextureMemorySize*0x100000);
-			return grGet_fill_num(plength, params, Glide.TexMemoryPerTMU*UserConfig.NumTMU);
+			return grGet_fill_num(plength, params, Glide.TexMemoryPerTMU*InternalConfig.NumTMU);
 		case GR_MEMORY_UMA:
 			/* 1 4
 			The total number of bytes if a UMA configuration, else 0. */
@@ -955,7 +984,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			/* 1 4
 			The number of Texelfx chips per Pixelfx chip. For integrated chips, the number of TMUs will be returned.*/
 			//return grGet_fill_num(plength, params, GLIDE_NUM_TMU);
-			return grGet_fill_num(plength, params, UserConfig.NumTMU);
+			return grGet_fill_num(plength, params, InternalConfig.NumTMU);
 		case GR_PENDING_BUFFERSWAPS:
 			/* 1 4
 			The number of buffer swaps pending. */
@@ -969,40 +998,16 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 			The revision of the Texelfx chip(s). */
 			return grGet_fill_num(plength, params, Glide.TexelfxVersion);
 		case GR_STATS_LINES:
-			/* 1 4
-			The number of lines drawn. */
-			break;
 		case GR_STATS_PIXELS_AFUNC_FAIL:
-			/* 1 4
-			The number of pixels that failed the alpha function test. */
-			break;
 		case GR_STATS_PIXELS_CHROMA_FAIL:
-			/* 1 4
-			The number of pixels that failed the chroma key (or range) test. */
-			break;
 		case GR_STATS_PIXELS_DEPTHFUNC_FAIL:
-			/* 1 4
-			The number of pixels that failed the depth buffer test.*/
-			break;
 		case GR_STATS_PIXELS_IN:
-			/*1 4
-			The number of pixels that went into the pixel pipe, excluding buffer clears.*/
-			break;
 		case GR_STATS_PIXELS_OUT:
-			/*1 4
-			The number of pixels that went out of the pixel pipe, including buffer clears.*/
-			break;
 		case GR_STATS_POINTS:
-			/*1 4
-			The number of points drawn.*/
-			break;
 		case GR_STATS_TRIANGLES_IN:
-			/*1 4
-			The number of triangles received. */
-			break;
 		case GR_STATS_TRIANGLES_OUT:
-			/* 1 4
-			The number of triangles drawn.*/
+			/* we don't count, but return something valid */
+			return grGet_fill_num(plength, params, 0);
 			break;
 		case GR_SWAP_HISTORY:
 			/*n 4n
@@ -1015,7 +1020,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_TEXTURE_ALIGN:
 			/*1 4
 			The alignment boundary for textures. For example, if textures must be 16-byte aligned, 0x10 would be returned.*/
-			return grGet_fill_num(plength, params, 0x8);
+			return grGet_fill_num(plength, params, GLIDE_TEXTURE_ALIGN);
 		case GR_VIDEO_POSITION:
 			/*2 8
 			Vertical and horizontal beam location. Vertical retrace is indicated by y == 0.*/
@@ -1060,7 +1065,7 @@ const char *voodoo_names[] = {
 };
 
 const char *string_tables[] = {
-	" GETGAMMA ",
+	" GETGAMMA TEXMIRROR ", /* missings: CHROMARANGE, TEXCHROMA, PALETTE6666, FOGCOORD */
 	"Voodoo Graphics",
 	"Glide",
 	"3Dfx Interactive",
@@ -1108,6 +1113,31 @@ FX_ENTRY void FX_CALL grGlideSetVertexLayout( const void *layout )
 #endif
 	
 	memcpy(VXLPosition, layout, sizeof(VXLPosition));
+	
+	if(VXLPosition[GR_PARAM_POS_ST1])
+		Glide.State.STWHint |= GR_STWHINT_ST_DIFF_TMU1;
+	else
+		Glide.State.STWHint &= ~GR_STWHINT_ST_DIFF_TMU1;
+
+	if(VXLPosition[GR_PARAM_POS_ST2])
+		Glide.State.STWHint |= GR_STWHINT_ST_DIFF_TMU2;
+	else
+		Glide.State.STWHint &= ~GR_STWHINT_ST_DIFF_TMU2;
+
+	if(VXLPosition[GR_PARAM_POS_Q0])
+		Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU0;
+	else
+		Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU0;
+
+	if(VXLPosition[GR_PARAM_POS_Q1])
+		Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU1;
+	else
+		Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU1;
+
+	if(VXLPosition[GR_PARAM_POS_Q2])
+		Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU2;
+	else
+		Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU2;
 	
 	//dump_layout();
 }
@@ -1196,11 +1226,73 @@ FX_ENTRY FxBool FX_CALL grSelectContext( GrContext_t context )
 	LeaveGLThread();
 }
 
+#define VL_CASE(_p) case _p: return #_p;
+
+static const char *vlname(FxU32 param)
+{
+	switch(param)
+	{
+		VL_CASE(GR_PARAM_XY)
+		VL_CASE(GR_PARAM_Z)
+		VL_CASE(GR_PARAM_W)
+		VL_CASE(GR_PARAM_Q)
+		VL_CASE(GR_PARAM_FOG_EXT)
+
+		VL_CASE(GR_PARAM_A)
+		VL_CASE(GR_PARAM_A1)
+		VL_CASE(GR_PARAM_A2)
+		VL_CASE(GR_PARAM_A3)
+		VL_CASE(GR_PARAM_A4)
+		VL_CASE(GR_PARAM_A5)
+		VL_CASE(GR_PARAM_A6)
+		VL_CASE(GR_PARAM_A7)
+
+		VL_CASE(GR_PARAM_RGB)
+		VL_CASE(GR_PARAM_RGB1)
+		VL_CASE(GR_PARAM_RGB2)
+		VL_CASE(GR_PARAM_RGB3)
+		VL_CASE(GR_PARAM_RGB4)
+		VL_CASE(GR_PARAM_RGB5)
+		VL_CASE(GR_PARAM_RGB6)
+		VL_CASE(GR_PARAM_RGB7)
+
+		VL_CASE(GR_PARAM_PARGB)
+		VL_CASE(GR_PARAM_PARGB1)
+		VL_CASE(GR_PARAM_PARGB2)
+		VL_CASE(GR_PARAM_PARGB3)
+		VL_CASE(GR_PARAM_PARGB4)
+		VL_CASE(GR_PARAM_PARGB5)
+		VL_CASE(GR_PARAM_PARGB6)
+		VL_CASE(GR_PARAM_PARGB7)
+
+		VL_CASE(GR_PARAM_ST0)
+		VL_CASE(GR_PARAM_ST1)
+		VL_CASE(GR_PARAM_ST2)
+		VL_CASE(GR_PARAM_ST3)
+		VL_CASE(GR_PARAM_ST4)
+		VL_CASE(GR_PARAM_ST5)
+		VL_CASE(GR_PARAM_ST6)
+		VL_CASE(GR_PARAM_ST7)
+
+		VL_CASE(GR_PARAM_Q0)
+		VL_CASE(GR_PARAM_Q1)
+		VL_CASE(GR_PARAM_Q2)
+		VL_CASE(GR_PARAM_Q3)
+		VL_CASE(GR_PARAM_Q4)
+		VL_CASE(GR_PARAM_Q5)
+		VL_CASE(GR_PARAM_Q6)
+		VL_CASE(GR_PARAM_Q7)
+	}
+	return "UNKNOWN";
+}
+
+#undef VL_CASE
+
 FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 {
 	if(mode == GR_PARAM_ENABLE)
 	{
-		GlideMsg( "grVertexLayout(%u, %d, GR_PARAM_ENABLE)\n", param, offset );
+		GlideMsg( "grVertexLayout(%s=%u, %d, GR_PARAM_ENABLE)\n", vlname(param), param, offset );
 		
 		switch(param)
 		{
@@ -1234,18 +1326,23 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 				break;
 			case GR_PARAM_ST1:
 				VXLPosition[GR_PARAM_POS_ST1] = offset;
+				Glide.State.STWHint |= GR_STWHINT_ST_DIFF_TMU1;
 				break;
 			case GR_PARAM_ST2:
 				VXLPosition[GR_PARAM_POS_ST2] = offset;
+				Glide.State.STWHint |= GR_STWHINT_ST_DIFF_TMU2;
 				break;
 			case GR_PARAM_Q0:
 				VXLPosition[GR_PARAM_POS_Q0] = offset;
+				Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU0;
 				break;
 			case GR_PARAM_Q1:
 				VXLPosition[GR_PARAM_POS_Q1] = offset;
+				Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU1;
 				break;
 			case GR_PARAM_Q2:
 				VXLPosition[GR_PARAM_POS_Q2] = offset;
+				Glide.State.STWHint |= GR_STWHINT_W_DIFF_TMU2;
 				break;
 			case GR_PARAM_FOG_EXT:
 				VXLPosition[GR_PARAM_POS_FOG_EXT] = offset;
@@ -1282,18 +1379,23 @@ FX_ENTRY void FX_CALL grVertexLayout(FxU32 param, FxI32 offset, FxU32 mode)
 				break;
 			case GR_PARAM_ST1:
 				VXLPosition[GR_PARAM_POS_ST1] = 0;
+				Glide.State.STWHint &= ~GR_STWHINT_ST_DIFF_TMU1;
 				break;
 			case GR_PARAM_ST2:
 				VXLPosition[GR_PARAM_POS_ST2] = 0;
+				Glide.State.STWHint &= ~GR_STWHINT_ST_DIFF_TMU2;
 				break;
 			case GR_PARAM_Q0:
 				VXLPosition[GR_PARAM_POS_Q0] = 0;
+				Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU0;
 				break;
 			case GR_PARAM_Q1:
 				VXLPosition[GR_PARAM_POS_Q1] = 0;
+				Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU1;
 				break;
 			case GR_PARAM_Q2:
 				VXLPosition[GR_PARAM_POS_Q2] = 0;
+				Glide.State.STWHint &= ~GR_STWHINT_W_DIFF_TMU2;
 				break;
 			case GR_PARAM_FOG_EXT:
 				VXLPosition[GR_PARAM_POS_FOG_EXT] = 0;

@@ -65,12 +65,11 @@ static TColorStruct     *pC,
 static TVertexStruct    *pV;
 static TTextureStruct   *pTS;
 static TFogStruct       *pF;
-static float            atmuoow;
+/*static float            atmuoow;
 static float            btmuoow;
-static float            ctmuoow;
-static float            hAspect, 
-                        wAspect,
-                        maxoow;
+static float            ctmuoow;*/
+static float            hAspect, wAspect;
+//                        maxoow;
 
 //**************************************************************
 // Functions definitions
@@ -173,19 +172,8 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
 
 		for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
 		{
-			  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
-        if ( OpenGL.Texture[tmu] )
-        {
-            DGL(glEnable)( GL_TEXTURE_2D );
-
-	          Textures->MakeReady( tmu );
-        }
-        else
-        {
-            DGL(glDisable)( GL_TEXTURE_2D );
-        }
+			Textures->MakeReady( tmu );
     }
-    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -220,43 +208,46 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
             DGL(glColor3fv)( &OGLRender.TColor[ i ].ar );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
-            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
+            OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].as );
+
 #if GLIDE_NUM_TMU >= 2
             if(InternalConfig.NumTMU >= 2)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as1);
+            	 OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].as1);
 #endif
 #if GLIDE_NUM_TMU >= 3
             if(InternalConfig.NumTMU >= 3)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].as2);
+            	 OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].as2);
 #endif
-            
+          
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
             
             DGL(glColor3fv)( &OGLRender.TColor[ i ].br );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
-            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
+            OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].bs );
+
 #if GLIDE_NUM_TMU >= 2
             if(InternalConfig.NumTMU >= 2)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs1);
+            	 OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].bs1);
 #endif
 #if GLIDE_NUM_TMU >= 3
             if(InternalConfig.NumTMU >= 3)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].bs2);
+            	 OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].bs2);
 #endif
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
             
             DGL(glColor3fv)( &OGLRender.TColor[ i ].cr );
             p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
             p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
-            DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
+            OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].cs );
+
 #if GLIDE_NUM_TMU >= 2
             if(InternalConfig.NumTMU >= 2)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs1);
+            	 OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].cs1);
 #endif
 #if GLIDE_NUM_TMU >= 3
             if(InternalConfig.NumTMU >= 3)
-            	 p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].cs2);
+            	 OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].cs2);
 #endif
             DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
         }
@@ -278,42 +269,42 @@ void RenderDrawTriangles_traced( const char *fn, const int line )
                 DGL(glColor4fv)( &OGLRender.TColor[ i ].ar );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].ar );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].af );
-                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].as );
+                OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].as );
 #if GLIDE_NUM_TMU >= 2
                 if(InternalConfig.NumTMU >= 2)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].as1);
+                    OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].as1);
 #endif
 #if GLIDE_NUM_TMU >= 3
                 if(InternalConfig.NumTMU >= 3)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].as2);
+                    OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].as2);
 #endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].ax );
                 
                 DGL(glColor4fv)( &OGLRender.TColor[ i ].br );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].br );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].bf );
-                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].bs );
+                OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].bs );
 #if GLIDE_NUM_TMU >= 2
                 if(InternalConfig.NumTMU >= 2)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].bs1);
+                    OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].bs1);
 #endif
 #if GLIDE_NUM_TMU >= 3
                 if(InternalConfig.NumTMU >= 3)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].bs2);
+                    OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].bs2);
 #endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].bx );
                 
                 DGL(glColor4fv)( &OGLRender.TColor[ i ].cr );
                 p_glSecondaryColor3fvEXT( &OGLRender.TColor2[ i ].cr );
                 p_glFogCoordfEXT( OGLRender.TFog[ i ].cf );
-                DGL(glTexCoord4fv)( &OGLRender.TTexture[ i ].cs );
+                OGLCoords4(GR_TMU0, &OGLRender.TTexture[ i ].cs );
 #if GLIDE_NUM_TMU >= 2
                 if(InternalConfig.NumTMU >= 2)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &OGLRender.TTexture[ i ].cs1);
+                    OGLCoords4(GR_TMU1, &OGLRender.TTexture[ i ].cs1);
 #endif
 #if GLIDE_NUM_TMU >= 3
                 if(InternalConfig.NumTMU >= 3)
-                    p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &OGLRender.TTexture[ i ].cs2);
+                    OGLCoords4(GR_TMU2, &OGLRender.TTexture[ i ].cs2);
 #endif
                 DGL(glVertex3fv)( &OGLRender.TVertex[ i ].cx );
             }
@@ -405,18 +396,42 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
 
     ZeroMemory( pC2, sizeof( TColorStruct ) );
 
-    if ( ( Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0 ) == 0 )
+		float atmuoow0 = a->oow;
+    float btmuoow0 = b->oow;
+    float ctmuoow0 = c->oow;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0) != 0)
     {
-        atmuoow = a->oow;
-        btmuoow = b->oow;
-        ctmuoow = c->oow;
+			atmuoow0 = a->tmuvtx[0].oow;
+			btmuoow0 = b->tmuvtx[0].oow;
+			ctmuoow0 = c->tmuvtx[0].oow;
     }
-    else
+
+#if GLIDE_NUM_TMU >= 2
+		float atmuoow1 = atmuoow0;
+    float btmuoow1 = btmuoow0;
+    float ctmuoow1 = btmuoow0;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1) != 0)
     {
-        atmuoow = a->tmuvtx[ 0 ].oow;
-        btmuoow = b->tmuvtx[ 0 ].oow;
-        ctmuoow = c->tmuvtx[ 0 ].oow;
+			atmuoow1 = a->tmuvtx[1].oow;
+			btmuoow1 = b->tmuvtx[1].oow;
+			ctmuoow1 = c->tmuvtx[1].oow;
     }
+#endif
+
+#if GLIDE_NUM_TMU >= 3
+		float atmuoow2 = atmuoow1;
+    float btmuoow2 = btmuoow1;
+    float ctmuoow2 = btmuoow1;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2) != 0)
+    {
+			atmuoow2 = a->tmuvtx[2].oow;
+			btmuoow2 = b->tmuvtx[2].oow;
+			ctmuoow2 = c->tmuvtx[2].oow;
+    }
+#endif
 
     if ( Glide.ALocal )
     {
@@ -675,14 +690,14 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
         pV->cy = c->y;
     }
 
-
- 		float maxw = max(max( atmuoow, max( btmuoow, ctmuoow ) ), D1OVER65535);
-		maxoow = 1.0f / maxw;
-    
+		const float maxoow = 65536.0;
 		if ( OpenGL.Texture[0] )
 		{
-			Textures->GetAspect(0, &hAspect, &wAspect );
-
+ 			//float maxw = max(max( atmuoow0, max( btmuoow0, ctmuoow0 ) ), D1OVER65535);
+			//float maxoow = 1.0f / maxw;
+			
+			Textures->GetAspect(GR_TMU0, &hAspect, &wAspect );
+			
 			pTS->as = a->tmuvtx[ 0 ].sow * wAspect * maxoow;
 			pTS->at = a->tmuvtx[ 0 ].tow * hAspect * maxoow;
 			pTS->bs = b->tmuvtx[ 0 ].sow * wAspect * maxoow;
@@ -691,27 +706,42 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
 			pTS->ct = c->tmuvtx[ 0 ].tow * hAspect * maxoow;
 
 			pTS->aq = pTS->bq = pTS->cq = 0.0f;
-			pTS->aoow = atmuoow * maxoow;
-			pTS->boow = btmuoow * maxoow;
-			pTS->coow = ctmuoow * maxoow;
+			pTS->aoow = atmuoow0 * maxoow;
+			pTS->boow = btmuoow0 * maxoow;
+			pTS->coow = ctmuoow0 * maxoow;
 		}
 
 #if GLIDE_NUM_TMU >= 2
 		if ( OpenGL.Texture[1] )
 		{
-			if(Textures->GetAspect( 1, &hAspect, &wAspect ))
+			if(Textures->GetAspect(GR_TMU1, &hAspect, &wAspect )) // !
 			{
-				pTS->as1 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
-				pTS->at1 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
-				pTS->bs1 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
-				pTS->bt1 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
-				pTS->cs1 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
-				pTS->ct1 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
-
+ 				//float maxw = max(max( atmuoow1, max( btmuoow1, ctmuoow1 ) ), D1OVER65535);
+				//float maxoow = 1.0f / maxw;
+				
+				if((Glide.State.STWHint & GR_STWHINT_ST_DIFF_TMU1) != 0)
+				{
+					pTS->as1 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
+					pTS->at1 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
+					pTS->bs1 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
+					pTS->bt1 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
+					pTS->cs1 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
+					pTS->ct1 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
+				}
+				else
+				{
+					pTS->as1 = a->tmuvtx[ 0 ].sow * wAspect * maxoow;
+					pTS->at1 = a->tmuvtx[ 0 ].tow * hAspect * maxoow;
+					pTS->bs1 = b->tmuvtx[ 0 ].sow * wAspect * maxoow;
+					pTS->bt1 = b->tmuvtx[ 0 ].tow * hAspect * maxoow;
+					pTS->cs1 = c->tmuvtx[ 0 ].sow * wAspect * maxoow;
+					pTS->ct1 = c->tmuvtx[ 0 ].tow * hAspect * maxoow;
+				}
+				
 				pTS->aq1 = pTS->bq1 = pTS->cq1 = 0.0f;
-				pTS->aoow1 = atmuoow * maxoow;
-				pTS->boow1 = btmuoow * maxoow;
-				pTS->coow1 = ctmuoow * maxoow;
+				pTS->aoow1 = atmuoow1 * maxoow;
+				pTS->boow1 = btmuoow1 * maxoow;
+				pTS->coow1 = ctmuoow1 * maxoow;
 			}
 		}
 #endif
@@ -719,19 +749,43 @@ void RenderAddTriangle_traced( const GrVertex *a, const GrVertex *b, const GrVer
 #if GLIDE_NUM_TMU >= 3
 		if ( OpenGL.Texture[2] )
 		{
-			if(Textures->GetAspect( 2, &hAspect, &wAspect ))
+			//if(Textures->GetAspect(GR_TMU2, &hAspect, &wAspect ))
 			{
-        pTS->as2 = a->tmuvtx[ 2 ].sow * wAspect * maxoow;
-        pTS->at2 = a->tmuvtx[ 2 ].tow * hAspect * maxoow;
-        pTS->bs2 = b->tmuvtx[ 2 ].sow * wAspect * maxoow;
-        pTS->bt2 = b->tmuvtx[ 2 ].tow * hAspect * maxoow;
-        pTS->cs2 = c->tmuvtx[ 2 ].sow * wAspect * maxoow;
-        pTS->ct2 = c->tmuvtx[ 2 ].tow * hAspect * maxoow;
+ 				//float maxw = max(max( atmuoow2, max( btmuoow2, ctmuoow2 ) ), D1OVER65535);
+				//float maxoow = 1.0f / maxw;
+
+				if((Glide.State.STWHint & GR_STWHINT_ST_DIFF_TMU2) != 0)
+				{
+	        pTS->as2 = a->tmuvtx[ 2 ].sow * wAspect * maxoow;
+	        pTS->at2 = a->tmuvtx[ 2 ].tow * hAspect * maxoow;
+	        pTS->bs2 = b->tmuvtx[ 2 ].sow * wAspect * maxoow;
+	        pTS->bt2 = b->tmuvtx[ 2 ].tow * hAspect * maxoow;
+	        pTS->cs2 = c->tmuvtx[ 2 ].sow * wAspect * maxoow;
+	        pTS->ct2 = c->tmuvtx[ 2 ].tow * hAspect * maxoow;
+	      }
+	      else if((Glide.State.STWHint & GR_STWHINT_ST_DIFF_TMU1) != 0)
+	      {
+	        pTS->as2 = a->tmuvtx[ 1 ].sow * wAspect * maxoow;
+	        pTS->at2 = a->tmuvtx[ 1 ].tow * hAspect * maxoow;
+	        pTS->bs2 = b->tmuvtx[ 1 ].sow * wAspect * maxoow;
+	        pTS->bt2 = b->tmuvtx[ 1 ].tow * hAspect * maxoow;
+	        pTS->cs2 = c->tmuvtx[ 1 ].sow * wAspect * maxoow;
+	        pTS->ct2 = c->tmuvtx[ 1 ].tow * hAspect * maxoow;
+	      }
+	      else
+	      {
+	        pTS->as2 = a->tmuvtx[ 0 ].sow * wAspect * maxoow;
+	        pTS->at2 = a->tmuvtx[ 0 ].tow * hAspect * maxoow;
+	        pTS->bs2 = b->tmuvtx[ 0 ].sow * wAspect * maxoow;
+	        pTS->bt2 = b->tmuvtx[ 0 ].tow * hAspect * maxoow;
+	        pTS->cs2 = c->tmuvtx[ 0 ].sow * wAspect * maxoow;
+	        pTS->ct2 = c->tmuvtx[ 0 ].tow * hAspect * maxoow;
+	      }
 
         pTS->aq2 = pTS->bq2 = pTS->cq2 = 0.0f;
-        pTS->aoow2 = atmuoow * maxoow;
-        pTS->boow2 = btmuoow * maxoow;
-        pTS->coow2 = ctmuoow * maxoow;
+        pTS->aoow2 = atmuoow2 * maxoow;
+        pTS->boow2 = btmuoow2 * maxoow;
+        pTS->coow2 = ctmuoow2 * maxoow;
 			}
     }
 #endif
@@ -838,16 +892,36 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
     // Color Stuff, need to optimize it
     ZeroMemory( pC2, sizeof( TColorStruct ) );
 
-    if ( ( Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0 ) == 0 )
+    float atmuoow0 = a->oow;
+    float btmuoow0 = b->oow;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0 ) != 0)
     {
-        atmuoow = a->oow;
-        btmuoow = b->oow;
+        atmuoow0 = a->tmuvtx[0].oow;
+        btmuoow0 = b->tmuvtx[0].oow;
     }
-    else
+
+#if GLIDE_NUM_TMU >= 2
+    float atmuoow1 = atmuoow0;
+    float btmuoow1 = btmuoow0;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1 ) != 0)
     {
-        atmuoow = a->tmuvtx[ 0 ].oow;
-        btmuoow = b->tmuvtx[ 0 ].oow;
+        atmuoow1 = a->tmuvtx[1].oow;
+        btmuoow1 = b->tmuvtx[1].oow;
     }
+#endif
+
+#if GLIDE_NUM_TMU >= 3
+    float atmuoow2 = atmuoow1;
+    float btmuoow2 = btmuoow1;
+
+    if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2 ) != 0)
+    {
+        atmuoow2 = a->tmuvtx[2].oow;
+        btmuoow2 = b->tmuvtx[2].oow;
+    }
+#endif
 
     if ( Glide.ALocal )
     {
@@ -1216,8 +1290,8 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
         pTS->bt = b->tmuvtx[0].tow * hAspect; // / b->oow;
 
         pTS->aq = pTS->bq = 0.0f;
-        pTS->aoow = atmuoow;
-        pTS->boow = btmuoow;
+        pTS->aoow = atmuoow0;
+        pTS->boow = btmuoow0;
     }
 
 #if GLIDE_NUM_TMU >= 2
@@ -1231,8 +1305,8 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
 				pTS->bt1 = b->tmuvtx[1].tow * hAspect; // / b->oow;
 
 				pTS->aq1 = pTS->bq1 = 0.0f;
-				pTS->aoow1 = atmuoow;
-				pTS->boow1 = btmuoow;
+				pTS->aoow1 = atmuoow1;
+				pTS->boow1 = btmuoow1;
 			}
 		}
 #endif
@@ -1248,8 +1322,8 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
 				pTS->bt2 = b->tmuvtx[2].tow * hAspect; // / b->oow;
 
 				pTS->aq2 = pTS->bq2 = 0.0f;
-				pTS->aoow2 = atmuoow;
-				pTS->boow2 = btmuoow;
+				pTS->aoow2 = atmuoow2;
+				pTS->boow2 = btmuoow2;
 			}
 		}
 #endif
@@ -1302,19 +1376,8 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
     int tmu;
     for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
     {
-    	  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
-        if ( OpenGL.Texture[tmu] )
-        {
-            DGL(glEnable)( GL_TEXTURE_2D );
-
-            Textures->MakeReady( tmu );
-        }
-        else
-        {
-            DGL(glDisable)( GL_TEXTURE_2D );
-        }
+        Textures->MakeReady( tmu );
     }
-    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -1341,28 +1404,28 @@ void RenderAddLine( const GrVertex *a, const GrVertex *b, bool unsnap )
     DGL(glBegin)( GL_LINES );
         DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
-        DGL(glTexCoord4fv)( &pTS->as );
+        OGLCoords4(GR_TMU0, &pTS->as );
 #if GLIDE_NUM_TMU >= 2
         if(InternalConfig.NumTMU >= 2)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->as1);
+            OGLCoords4(GR_TMU1, &pTS->as1);
 #endif
 #if GLIDE_NUM_TMU >= 3
         if(InternalConfig.NumTMU >= 3)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->as2);
+            OGLCoords4(GR_TMU2, &pTS->as2);
 #endif
         p_glFogCoordfEXT( pF->af );
         DGL(glVertex3fv)( &pV->ax );
 
         DGL(glColor4fv)( &pC->br );
         p_glSecondaryColor3fvEXT( &pC2->br );
-        DGL(glTexCoord4fv)( &pTS->bs );
+        OGLCoords4(GR_TMU0, &pTS->bs );
 #if GLIDE_NUM_TMU >= 2
         if(InternalConfig.NumTMU >= 2)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->bs1);
+            OGLCoords4(GR_TMU1, &pTS->bs1);
 #endif
 #if GLIDE_NUM_TMU >= 3
         if(InternalConfig.NumTMU >= 3)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->bs2);
+            OGLCoords4(GR_TMU2, &pTS->bs2);
 #endif
         p_glFogCoordfEXT( pF->bf );
         DGL(glVertex3fv)( &pV->bx );
@@ -1730,19 +1793,8 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
 #endif
     for(tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
     {
-    	  p_glActiveTextureARB( GL_TEXTURE0_ARB + tmu );
-        if ( OpenGL.Texture[tmu] )
-        {
-            DGL(glEnable)( GL_TEXTURE_2D );
-
-            Textures->MakeReady( tmu );
-        }
-        else
-        {
-            DGL(glDisable)( GL_TEXTURE_2D );
-        }
+        Textures->MakeReady( tmu );
     }
-    p_glActiveTextureARB( GL_TEXTURE0_ARB );
 
     if ( OpenGL.Blend )
     {
@@ -1769,14 +1821,14 @@ void RenderAddPoint( const GrVertex *a, bool unsnap )
     DGL(glBegin)( GL_POINTS );
         DGL(glColor4fv)( &pC->ar );
         p_glSecondaryColor3fvEXT( &pC2->ar );
-        DGL(glTexCoord4fv)( &pTS->as );
+        OGLCoords4(GR_TMU0, &pTS->as );
 #if GLIDE_NUM_TMU >= 2
         if(InternalConfig.NumTMU >= 2)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE1_ARB, &pTS->as1);
+            OGLCoords4(GR_TMU1, &pTS->as1);
 #endif
 #if GLIDE_NUM_TMU >= 3
         if(InternalConfig.NumTMU >= 3)
-            p_glMultiTexCoord4fvARB( GL_TEXTURE2_ARB, &pTS->as2);
+            OGLCoords4(GR_TMU2, &pTS->as2);
 #endif
         p_glFogCoordfEXT( pF->af );
         DGL(glVertex3fv)( &pV->ax );
