@@ -162,7 +162,7 @@ void PGTexture::DownloadMipMap( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOd
         if ( InternalConfig.EnableMipMaps && !InternalConfig.BuildMipMaps )
             DGL(glTexParameteri)( GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, true );
 
-        OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA, GL_UNSIGNED_BYTE, info->data );
+        OGL_LOAD_CREATE_TEXTURE( GL_RGBA, GL_BGRA, GL_UNSIGNED_BYTE, info->data );
     }
     else
     {
@@ -249,9 +249,11 @@ FxBool PGTexture::Source( GrChipID_t tmu, FxU32 startAddress, FxU32 evenOdd, GrT
 #ifndef GLIDE3
     m_tmu[tmu].wAspect = texAspects[ info->aspectRatio ].w;
     m_tmu[tmu].hAspect = texAspects[ info->aspectRatio ].h;
+    m_tmu[tmu].rAspect = texAspects[ info->aspectRatio ].r;
 #else
     m_tmu[tmu].wAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].w;
     m_tmu[tmu].hAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].h;
+    m_tmu[tmu].rAspect = texAspects[ 0x3 - info->aspectRatioLog2 ].r;
 #endif
 
     m_tmu[tmu].valid = ( ( startAddress + TextureMemRequired( evenOdd, info ) ) <= m_tex_memory_size );
@@ -315,7 +317,6 @@ bool PGTexture::MakeReady( int tmu )
     bool        * pal_change_ptr;
     bool        use_mipmap_ext;
     bool        use_mipmap_ext2;
-    bool        combine_units = false;
     
     p_glActiveTextureARB(OGLUnit(tmu));
 
@@ -335,22 +336,6 @@ bool PGTexture::MakeReady( int tmu )
     if(!m_tmu[tmu].valid)
     {
         return false;
-    }
-    
-    /* configuration to combine TMU for different mimmaps level */
-    if(m_tmu[0].valid && m_tmu[1].valid)
-    {
-    	if(m_tmu[0].evenOdd == GR_MIPMAPLEVELMASK_EVEN && m_tmu[1].evenOdd == GR_MIPMAPLEVELMASK_ODD)
-    	{
-    		if(tmu == 1)
-    		{
-    			return true;
-    		}
-    		else
-    		{
-    			combine_units = true;
-    		}
-    	}
     }
 
     DGL(glEnable)(GL_TEXTURE_2D);
@@ -449,23 +434,23 @@ bool PGTexture::MakeReady( int tmu )
             if ( m_chromakey_mode )
             {
                 Convert565Kto8888( (FxU16*)data, m_chromakey_value_565, m_tex_temp, texVals.nPixels );
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
             }
             else if ( InternalConfig.OGLVersion > OGL_VER_1_1 && !InternalConfig.Textures32bit)
             {
-                OGL_LOAD_CREATE_TEXTURE( 3, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data );
             }
             else
             {
                 if ( InternalConfig.Wrap565to5551 && !InternalConfig.Textures32bit)
                 {
                     Convert565to5551( (FxU32*)data, m_tex_temp, texVals.nPixels );
-                    OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1_EXT, m_tex_temp );
+                    OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1_EXT, m_tex_temp );
                 }
                 else
                 {
                     Convert565to8888( (FxU16*)data, m_tex_temp, texVals.nPixels );
-                    OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+                    OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
                 }
             }
             break;
@@ -474,16 +459,16 @@ bool PGTexture::MakeReady( int tmu )
         	  if(InternalConfig.Textures32bit)
         	  {
             	Convert4444to8888( (FxU16*)data, m_tex_temp, texVals.nPixels );
-            	OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+            	OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
         	  }
         	  else if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
             {
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_SHORT_4_4_4_4_REV, data );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_SHORT_4_4_4_4_REV, data );
             }
             else
             {
                 Convert4444to4444special( (FxU32*)data, m_tex_temp, texVals.nPixels );
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_EXT, m_tex_temp );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4_EXT, m_tex_temp );
             }
 
             break;
@@ -492,16 +477,16 @@ bool PGTexture::MakeReady( int tmu )
         	  if(InternalConfig.Textures32bit)
         	  {
         	  	Convert1555to8888((FxU16*)data, m_tex_temp, texVals.nPixels);
-            	OGL_LOAD_CREATE_TEXTURE(4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp);
+            	OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp);
         	  }
             else if ( InternalConfig.OGLVersion > OGL_VER_1_1 )
             {
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, data );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, data );
             }
             else
             {
                 Convert1555to5551( (FxU32*)data, m_tex_temp, texVals.nPixels );
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1_EXT, m_tex_temp );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_SHORT_5_5_5_1_EXT, m_tex_temp );
             }
             break;
             
@@ -521,7 +506,7 @@ bool PGTexture::MakeReady( int tmu )
             else
             {
                 ConvertP8to8888( data, m_tex_temp, texVals.nPixels, m_palette );
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
             }
             break;
             
@@ -556,7 +541,7 @@ bool PGTexture::MakeReady( int tmu )
             	if(texVals.nPixels <= TEX_TEMP_PIXELS)
             	{
                 ConvertAP88to8888( (FxU16*)data, m_tex_temp, texVals.nPixels, m_palette );
-                OGL_LOAD_CREATE_TEXTURE( 4, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
+                OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_BGRA_EXT, GL_UNSIGNED_BYTE, m_tex_temp );
               }
               else
               {
@@ -567,17 +552,19 @@ bool PGTexture::MakeReady( int tmu )
             break;
             
         case GR_TEXFMT_ALPHA_8:
-            //ConvertA8toAP88( (FxU8*)data, (FxU16*)m_tex_temp, texVals.nPixels );
-            //OGL_LOAD_CREATE_TEXTURE( 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_tex_temp );
-            OGL_LOAD_CREATE_TEXTURE( GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, data );
+            ConvertA8toAP88( (FxU8*)data, (FxU16*)m_tex_temp, texVals.nPixels );
+            OGL_LOAD_CREATE_TEXTURE( 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, m_tex_temp );
+            //OGL_LOAD_CREATE_TEXTURE(GL_ALPHA, GL_ALPHA, GL_UNSIGNED_BYTE, data );
+            // ^ we cannot load A8 native way because in Glide is channel layout for
+            //   Alpha8 texture folowing A = R = G = B, but in OpenGL is A and R = G = B = 0
             break;
             
         case GR_TEXFMT_ALPHA_INTENSITY_88:
-            OGL_LOAD_CREATE_TEXTURE( 2, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data );
+            OGL_LOAD_CREATE_TEXTURE(GL_LUMINANCE8_ALPHA8, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, data );
             break;
             
         case GR_TEXFMT_INTENSITY_8:
-            OGL_LOAD_CREATE_TEXTURE( 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, data );
+            OGL_LOAD_CREATE_TEXTURE(GL_LUMINANCE8, GL_LUMINANCE, GL_UNSIGNED_BYTE, data );
             break;
             
         case GR_TEXFMT_ALPHA_INTENSITY_44:
@@ -594,22 +581,22 @@ bool PGTexture::MakeReady( int tmu )
             break;
             
         case GR_TEXFMT_8BIT: //GR_TEXFMT_RGB_332
-            OGL_LOAD_CREATE_TEXTURE( 3, GL_RGB, GL_UNSIGNED_BYTE_3_3_2_EXT, data );
+            OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGB, GL_UNSIGNED_BYTE_3_3_2_EXT, data );
             break;
             
         case GR_TEXFMT_16BIT: //GR_TEXFMT_ARGB_8332:
             Convert8332to8888( (FxU16*)data, m_tex_temp, texVals.nPixels );
-            OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+            OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
             break;
             
         case GR_TEXFMT_YIQ_422:
             ConvertYIQto8888( (FxU8*)data, m_tex_temp, texVals.nPixels, &(m_ncc[m_ncc_select]) );
-            OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+            OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
             break;
             
         case GR_TEXFMT_AYIQ_8422:
             ConvertAYIQto8888( (FxU16*)data, m_tex_temp, texVals.nPixels, &(m_ncc[m_ncc_select]) );
-            OGL_LOAD_CREATE_TEXTURE( 4, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
+            OGL_LOAD_CREATE_TEXTURE(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, m_tex_temp );
             break;
             
         case GR_TEXFMT_RSVD0:
@@ -617,7 +604,7 @@ bool PGTexture::MakeReady( int tmu )
         case GR_TEXFMT_RSVD2:
             Error( "grTexDownloadMipMapLevel - Unsupported format(%d)\n", m_tmu[tmu].info.format );
             memset( m_tex_temp, 255, texVals.nPixels * 2 );
-            OGL_LOAD_CREATE_TEXTURE( 1, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_tex_temp );
+            OGL_LOAD_CREATE_TEXTURE(GL_LUMINANCE8, GL_LUMINANCE, GL_UNSIGNED_BYTE, m_tex_temp );
             break;
         }
     }
@@ -727,6 +714,18 @@ bool PGTexture::GetAspect( int tmu, float *hAspect, float *wAspect )
 
 	*hAspect = m_tmu[tmu].hAspect;
   *wAspect = m_tmu[tmu].wAspect;
+  
+  return true;
+}
+
+bool PGTexture::GetAspect( int tmu, float *rAspect )
+{
+	if(tmu > m_tmu_cnt)
+	{
+		return false;
+	}
+
+	*rAspect = m_tmu[tmu].rAspect;
   
   return true;
 }

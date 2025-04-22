@@ -194,6 +194,12 @@ struct GlideState
     GrColorFormat_t         ColorFormat;
     FxU32                   STWHint;
     FxBool                  VRetrace;
+#ifdef GLIDE3
+    GrCoordinateSpaceMode_t SpaceMode;
+    FxI32                   ViewPort[4];
+    FxFloat                 DepthRange[2];
+    FxBool                  AAOrdered;
+#endif
 };
 
 struct GlideStruct
@@ -278,6 +284,17 @@ struct OpenGLStruct
     int                     WaitSignal;
     FxU32                   *tmpBuf;
 };
+
+typedef struct _OGLvertex
+{
+	GLfloat vertex[4];
+	GLfloat r;
+	GLfloat g;
+	GLfloat b;
+	GLfloat a;
+	GLfloat fog;
+	GLfloat tex[GLIDE_MAX_TMU][4];
+} OGLvertex;
 
 #define OGL_CFG_BOOL(_name, _def, _des)              bool _name;
 #define OGL_CFG_FLOAT(_name, _def, _min, _max, _dec) float _name;

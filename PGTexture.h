@@ -35,6 +35,7 @@ public:
     void ChromakeyMode( GrChromakeyMode_t mode );
     void ChromakeyValue( GrColor_t value );
     bool GetAspect( int tmu, float *hAspect, float *wAspect );
+    bool GetAspect( int tmu, float *rAspect );
     void Clear( void );
     static FxU32 TextureMemRequired( FxU32 evenOdd, GrTexInfo *info );
     bool MakeReady( int tmu );
@@ -81,6 +82,7 @@ private:
       TexDB *         db;
       float           wAspect;
       float           hAspect;
+      float           rAspect;
       bool            valid;
       FxU8 *          memory;
       FxU32           startAddress;

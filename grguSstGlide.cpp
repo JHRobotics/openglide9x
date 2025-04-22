@@ -112,6 +112,16 @@ grGlideInit( void )
     Glide.ActiveVoodoo      = 0;
     Glide.State.VRetrace    = FXFALSE;
     Glide.State.Magic       = GLIDESTATE_MAGIC;
+#ifdef GLIDE3
+    Glide.State.SpaceMode = GR_WINDOW_COORDS;
+    Glide.State.ViewPort[0] = 0;
+    Glide.State.ViewPort[1] = 0;
+    Glide.State.ViewPort[2] = 640;
+    Glide.State.ViewPort[3] = 480;
+    Glide.State.DepthRange[0] = 0.f;
+    Glide.State.DepthRange[1] = 65535.f;
+    Glide.State.AAOrdered  = false;
+#endif
 
     ExternErrorFunction = NULL;
 
@@ -297,7 +307,12 @@ grGlideSetState( const GrState *state )
     		Textures->Invalidate(tmu);
     	}
     }
-
+#ifdef GLIDE3
+    Glide.State.SpaceMode = StateTemp.SpaceMode;
+    memcpy(Glide.State.ViewPort, StateTemp.ViewPort, sizeof(FxI32[4]));
+    memcpy(Glide.State.DepthRange, StateTemp.ViewPort, sizeof(FxFloat[2]));
+    Glide.State.AAOrdered  = StateTemp.AAOrdered;
+#endif
     LeaveGLThread();
 }
 

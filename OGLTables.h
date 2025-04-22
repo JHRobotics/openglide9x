@@ -9,6 +9,7 @@ typedef struct
 {
     float h;
     float w;
+    float r;
 } OGLAspect;
 
 typedef struct

@@ -303,12 +303,6 @@ guEndianSwapBytes( FxU16 value )
 }
 
 #ifdef GLIDE3
-static FxI32 Glide3ViewPort[4] = {0, 0, 640, 480};
-static FxFloat Glide3DepthRange[2] = {0.f, 65535.f};
-static GrCoordinateSpaceMode_t Glide3CoordinateSpaceMode = GR_WINDOW_COORDS;
-
-/* Glide3.x */
-static bool AAOrdered = false;
 
 void FX_CALL grGetGammaTableExt( FxU32 nentries, FxU32 *red, FxU32 *green, FxU32 *blue)
 {
@@ -330,7 +324,7 @@ FX_ENTRY void FX_CALL grEnable( GrEnableMode_t mode)
 	switch(mode)
 	{
 		case GR_AA_ORDERED:
-			AAOrdered = true;
+			Glide.State.AAOrdered = true;
 			break;
 		case GR_PASSTHRU:
 			Activate3DWindow();
@@ -347,7 +341,7 @@ FX_ENTRY void FX_CALL grDisable ( GrEnableMode_t mode)
 	switch(mode)
 	{
 		case GR_AA_ORDERED:
-			AAOrdered = false;
+			Glide.State.AAOrdered = false;
 			break;
 		case GR_PASSTHRU:
 			Deactivate3DWindow();
@@ -386,7 +380,7 @@ void VXLInit()
 		VXLPosition[i] = 0;
 	}
 	
-	Glide3CoordinateSpaceMode = GR_WINDOW_COORDS;
+	Glide.State.SpaceMode = GR_WINDOW_COORDS;
 };
 
 #define VXLGetOffset(_p) VXLPosition[(_p)]
@@ -408,7 +402,7 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 	v->y = ((float*)mem)[1];
 	
 	VXLGetFloat(v->ooz, GR_PARAM_POS_Z,  0);
-	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
+	if(Glide.State.SpaceMode == GR_CLIP_COORDS)
 	{
 		VXLGetFloat(v->oow, GR_PARAM_POS_W,  0);
 		VXLGetFloat(fog,    GR_PARAM_POS_Q,  0);
@@ -454,19 +448,20 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 	}
 #endif
 
-	if(Glide3CoordinateSpaceMode == GR_CLIP_COORDS)
+	if(Glide.State.SpaceMode == GR_CLIP_COORDS)
 	{
+		float q1 = v->oow;
 		float q = 65536.0f;
-		if(v->oow != 0)
+		if(q1 != 0)
 		{
-			q = 1.f / v->oow;
+			q = 1.f / q1;
 		}
 		
 		v->oow = q;
-    v->x = v->x * q * Glide3ViewPort[2] * 0.5f + Glide3ViewPort[2] * 0.5f;
-    v->y = v->y * q * Glide3ViewPort[3] * 0.5f + Glide3ViewPort[3] * 0.5f;
+    v->x = v->x * q * Glide.State.ViewPort[2] * 0.5f + Glide.State.ViewPort[2] * 0.5f;
+    v->y = v->y * q * Glide.State.ViewPort[3] * 0.5f + Glide.State.ViewPort[3] * 0.5f;
     
-    float z_range = Glide3DepthRange[1] - Glide3DepthRange[0];
+    float z_range = Glide.State.DepthRange[1] - Glide.State.DepthRange[0];
     
     //v->ooz = v->ooz * q * z_range * 0.5f * 65535.f + z_range * 0.5f * 65535.f;
     v->ooz = v->ooz * q * z_range * 0.5f + z_range * 0.5f;
@@ -479,52 +474,43 @@ void Glide3VertexUnpack(GrVertex *v, const void *ptr)
 			v->a *= 255.f;
 		}
 		
-		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0) != 0)
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0) == 0)
 		{
-			//v->tmuvtx[0].oow = v->tmuvtx[0].oow * q; // * 256.0f;
-			v->tmuvtx[0].oow = 1.f / v->tmuvtx[0].oow;
+			v->tmuvtx[0].oow = q1;
 		}
-		else
-		{
-			v->tmuvtx[0].oow = q;
-		}
-		v->tmuvtx[0].sow = v->tmuvtx[0].sow * v->tmuvtx[0].oow * 256.0f;
-		v->tmuvtx[0].tow = v->tmuvtx[0].tow * v->tmuvtx[0].oow * 256.0f;
 
-#if GLIDE_NUM_TMU >= 2
-		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1) != 0)
-		{
-			//v->tmuvtx[1].oow = v->tmuvtx[1].oow * q; // * 256.0f;
-			v->tmuvtx[1].oow = 1.f / v->tmuvtx[1].oow;
-		}
-		else
+#if GLIDE_NUM_TMU >= 2		
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1) == 0)
 		{
 			v->tmuvtx[1].oow = v->tmuvtx[0].oow;
 		}
-		v->tmuvtx[1].sow = v->tmuvtx[1].sow * v->tmuvtx[1].oow * 256.0f;
-		v->tmuvtx[1].tow = v->tmuvtx[1].tow * v->tmuvtx[1].oow * 256.0f;
 #endif
 
 #if GLIDE_NUM_TMU >= 3
-		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2) != 0)
-		{
-			//v->tmuvtx[2].oow = v->tmuvtx[2].oow * q; // * 256.0f;
-			v->tmuvtx[2].oow = 1.f / v->tmuvtx[2].oow;
-		}
-		else
+		if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2) == 0)
 		{
 			v->tmuvtx[2].oow = v->tmuvtx[1].oow;
 		}
-		v->tmuvtx[2].sow = v->tmuvtx[2].sow * v->tmuvtx[2].oow * 256.0f;
-		v->tmuvtx[2].tow = v->tmuvtx[2].tow * v->tmuvtx[2].oow * 256.0f;
 #endif
+
 	}
 }
 
 FX_ENTRY void FX_CALL grCoordinateSpace( GrCoordinateSpaceMode_t mode )
 {
-	Glide3CoordinateSpaceMode = mode;
-	GlideMsg( "grCoordinateSpace(%d)\n", mode );
+	Glide.State.SpaceMode = mode;
+	if(mode == GR_WINDOW_COORDS)
+	{
+		GlideMsg("grCoordinateSpace(GR_WINDOW_COORDS)\n");
+	}
+	else if(mode == GR_CLIP_COORDS)
+	{
+		GlideMsg("grCoordinateSpace(GR_CLIP_COORDS)\n");
+	}
+	else
+	{
+		GlideMsg("!!! grCoordinateSpace(%d)\n", mode );
+	}
 }
 
 FX_ENTRY void FX_CALL grDrawVertexArray ( FxU32 mode, FxU32 count, void **pointers )
@@ -1028,7 +1014,7 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 		case GR_VIEWPORT:
 			/*4 16
 			x, y, width, height.*/
-			return grGet_fill_buffer(params, plength, &Glide3ViewPort[0], 4*4);
+			return grGet_fill_buffer(params, plength, &Glide.State.ViewPort[0], 4*4);
 		case GR_WDEPTH_MIN_MAX:
 			/*2 8
 			The minimum and maximum allowable wbuffer values.*/
@@ -1052,8 +1038,8 @@ FX_ENTRY FxU32 FX_CALL grGet ( FxU32 pname, FxU32 plength, FxI32 *params )
 
 FX_ENTRY void FX_CALL grDepthRange( FxFloat n, FxFloat f )
 {
-	Glide3DepthRange[0] = n;
-	Glide3DepthRange[1] = f;
+	Glide.State.DepthRange[0] = n;
+	Glide.State.DepthRange[1] = f;
 }
 
 const char *voodoo_names[] = {
@@ -1417,10 +1403,10 @@ FX_ENTRY void FX_CALL grViewport( FxI32 x, FxI32 y, FxI32 width, FxI32 height )
 {
 	if(width != 0 && height != 0)
 	{
-		Glide3ViewPort[0] = x;
-		Glide3ViewPort[1] = y;
-		Glide3ViewPort[2] = width;
-		Glide3ViewPort[3] = height;
+		Glide.State.ViewPort[0] = x;
+		Glide.State.ViewPort[1] = y;
+		Glide.State.ViewPort[2] = width;
+		Glide.State.ViewPort[3] = height;
 	}
 	
 	GlideMsg( "grViewport(%d, %d, %d, %d)\n", x, y, width, height);
@@ -1435,6 +1421,30 @@ FX_ENTRY void FX_CALL guGammaCorrectionRGB( FxFloat red, FxFloat green, FxFloat 
 }
 
 #endif /* GLIDE3 */
+
+//#ifndef GLIDE3
+#if 0
+void Vertex2GL(GLVertex *in, OGLvertex *out)
+{
+	float tmu0_oow = in->oow;
+	if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU0) != 0)
+		tmu0_oow = int->tmuvtx[0].oow;
+
+	float tmu1_oow = tmu0_oow;
+	if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU1) != 0)
+		tmu1_oow = int->tmuvtx[1].oow;
+	
+	float tmu2_oow = tmu1_oow;
+	if((Glide.State.STWHint & GR_STWHINT_W_DIFF_TMU2) != 0)
+		tmu2_oow = int->tmuvtx[2].oow;
+
+	out->r = in->r * D1OVER255;
+	out->g = in->g * D1OVER255;
+	out->b = in->b * D1OVER255;
+	out->a = in->a * D1OVER255;
+}
+#endif
+
 
 FX_ENTRY void FX_CALL
 guMovieStart( void )

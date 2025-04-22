@@ -526,6 +526,88 @@ grTexLodBiasValue( GrChipID_t tmu, float bias )
     LeaveGLThread();
 }
 
+#define CASE_STR(_c) case _c: return #_c;
+
+static const char *str_GRFunction(GrCombineFunction_t f)
+{
+	switch(f)
+	{
+		CASE_STR(GR_COMBINE_FUNCTION_ZERO)
+		CASE_STR(GR_COMBINE_FUNCTION_LOCAL)
+		CASE_STR(GR_COMBINE_FUNCTION_LOCAL_ALPHA)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL_ALPHA)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL)
+		CASE_STR(GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL_ALPHA)
+	}
+	return "Uncased function";
+}
+
+static const char *str_GRFactor(GrCombineFactor_t f)
+{
+	switch(f)
+	{
+		CASE_STR(GR_COMBINE_FACTOR_ZERO)
+		CASE_STR(GR_COMBINE_FACTOR_LOCAL)
+		CASE_STR(GR_COMBINE_FACTOR_OTHER_ALPHA)
+		CASE_STR(GR_COMBINE_FACTOR_LOCAL_ALPHA)
+		CASE_STR(GR_COMBINE_FACTOR_TEXTURE_ALPHA)
+//		CASE_STR(GR_COMBINE_FACTOR_TEXTURE_RGB)
+		CASE_STR(GR_COMBINE_FACTOR_LOD_FRACTION)
+		CASE_STR(GR_COMBINE_FACTOR_ONE)
+		CASE_STR(GR_COMBINE_FACTOR_ONE_MINUS_LOCAL)
+		CASE_STR(GR_COMBINE_FACTOR_ONE_MINUS_OTHER_ALPHA)
+		CASE_STR(GR_COMBINE_FACTOR_ONE_MINUS_LOCAL_ALPHA)
+		CASE_STR(GR_COMBINE_FACTOR_ONE_MINUS_TEXTURE_ALPHA)
+		CASE_STR(GR_COMBINE_FACTOR_ONE_MINUS_LOD_FRACTION)
+	}
+	return "Uncased factor";
+}
+
+static const char *str_GL(GLenum e)
+{
+	switch(e)
+	{
+		CASE_STR(GL_REPLACE)
+		CASE_STR(GL_ZERO)
+		CASE_STR(GL_ONE)
+		CASE_STR(GL_COLOR)
+		CASE_STR(GL_CONSTANT)
+		CASE_STR(GL_TEXTURE)
+		CASE_STR(GL_MODULATE)
+		CASE_STR(GL_ADD)
+		CASE_STR(GL_DECAL)
+		CASE_STR(GL_PREVIOUS)
+		CASE_STR(GL_SRC_ALPHA)
+		CASE_STR(GL_SRC_COLOR)
+		CASE_STR(GL_ONE_MINUS_SRC_COLOR)
+		CASE_STR(GL_ONE_MINUS_SRC_ALPHA)
+		CASE_STR(GL_COMBINE)
+		CASE_STR(GL_COMBINE4_NV)
+	}
+	return "Uncased GLenum";
+}
+
+#undef CASE_STR
+
+static void GLCheck_(const char *file, int line)
+{
+	GLenum err;
+	while((err = DGL(glGetError)()) != GL_NO_ERROR)
+	{
+		GlideMsg("glGetError() = %d on %s:%d\n", err, file, line);
+	}
+}
+
+#define GLCheck() GLCheck_(__FILE__, __LINE__);
+
+/* NOTE: using this - https://registry.khronos.org/OpenGL/extensions/NV/NV_texture_env_combine4.txt */
+#include "OGLCombine.h"
+
 //*************************************************
 FX_ENTRY void FX_CALL
 grTexCombine( GrChipID_t tmu,
@@ -562,183 +644,32 @@ grTexCombine( GrChipID_t tmu,
     {
         OpenGL.Texture[tmu] = false;
     }
-/*
-    switch ( rgb_function )
-    {
-    case GR_COMBINE_FUNCTION_ZERO:
-        OpenGL.Texture = false;
-//      GlideMsg( "GR_COMBINE_FUNCTION_ZERO," );
-        break;
-    case GR_COMBINE_FUNCTION_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    }
+    
+     GlideMsg("grTexCombine( %d, %s, %s, %s, %s, %d, %d )\n",
+        tmu,
+        str_GRFunction(rgb_function), str_GRFactor(rgb_factor),
+        str_GRFunction(alpha_function), str_GRFactor(alpha_factor),
+        rgb_invert, alpha_invert);
 
-    switch ( rgb_factor )
-    {
-    case GR_COMBINE_FACTOR_ZERO:
-//      GlideMsg( "GR_COMBINE_FACTOR_ZERO," );
-        break;
-    case GR_COMBINE_FACTOR_LOCAL:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOCAL," );
-        break;
-    case GR_COMBINE_FACTOR_OTHER_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_OTHER_ALPHA," );
-        break;
-    case GR_COMBINE_FACTOR_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOCAL_ALPHA," );
-        break;
-    case GR_COMBINE_FACTOR_DETAIL_FACTOR:
-//      GlideMsg( "GR_COMBINE_FACTOR_DETAIL_FACTOR," );
-        break;
-    case GR_COMBINE_FACTOR_LOD_FRACTION:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOD_FRACTION," );
-        break;
-    case GR_COMBINE_FACTOR_ONE:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE," );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOCAL:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOCAL," );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_OTHER_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_OTHER_ALPHA," );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOCAL_ALPHA," );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_DETAIL_FACTOR:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_DETAIL_FACTOR," );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOD_FRACTION:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOD_FRACTION," );
-        break;
-    }
+    OGLTMUCombine(tmu, rgb_function, rgb_factor, alpha_function, alpha_factor);
+    //OGLCombine(tmu, GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_ONE, GR_COMBINE_FUNCTION_LOCAL, GR_COMBINE_FACTOR_ONE);
+    /*
+    p_glActiveTextureARB(GL_TEXTURE2);
+    GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE); GLCheck();
 
-    switch ( alpha_function )
-    {
-    case GR_COMBINE_FUNCTION_ZERO:
-//      OpenGL.Texture = false;
-//      GlideMsg( "GR_COMBINE_FUNCTION_ZERO," );
-        break;
-    case GR_COMBINE_FUNCTION_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_MINUS_LOCAL_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL," );
-        OpenGL.Texture = true;
-        break;
-    case GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FUNCTION_SCALE_OTHER_MINUS_LOCAL_ADD_LOCAL_ALPHA," );
-        OpenGL.Texture = true;
-        break;
-    }
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB,      GL_REPLACE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB,      GL_TEXTURE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE1_RGB,      GL_TEXTURE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_RGB,     GL_SRC_COLOR); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_RGB,     GL_SRC_COLOR); GLCheck();
 
-    switch ( alpha_factor )
-    {
-    case GR_COMBINE_FACTOR_ZERO:
-//      GlideMsg( "GR_COMBINE_FACTOR_ZERO\n" );
-        break;
-    case GR_COMBINE_FACTOR_LOCAL:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOCAL\n" );
-        break;
-    case GR_COMBINE_FACTOR_OTHER_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_OTHER_ALPHA\n" );
-        break;
-    case GR_COMBINE_FACTOR_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOCAL_ALPHA\n" );
-        break;
-    case GR_COMBINE_FACTOR_DETAIL_FACTOR:
-//      GlideMsg( "GR_COMBINE_FACTOR_DETAIL_FACTOR\n" );
-        break;
-    case GR_COMBINE_FACTOR_LOD_FRACTION:
-//      GlideMsg( "GR_COMBINE_FACTOR_LOD_FRACTION\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOCAL:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOCAL\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_OTHER_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_OTHER_ALPHA\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOCAL_ALPHA:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOCAL_ALPHA\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_DETAIL_FACTOR:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_DETAIL_FACTOR\n" );
-        break;
-    case GR_COMBINE_FACTOR_ONE_MINUS_LOD_FRACTION:
-//      GlideMsg( "GR_COMBINE_FACTOR_ONE_MINUS_LOD_FRACTION\n" );
-        break;
-    }
-    */
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA,    GL_REPLACE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA,    GL_TEXTURE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA,    GL_TEXTURE); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA,   GL_SRC_ALPHA); GLCheck();
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA,   GL_SRC_ALPHA); GLCheck();
+*/
 }
 
 //*************************************************

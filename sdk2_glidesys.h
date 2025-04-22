@@ -107,6 +107,8 @@ n** -----------------------------------------------------------------------
 
 #define GLIDE_PLATFORM (GLIDE_ENDIAN | GLIDE_OS | GLIDE_SST | GLIDE_HW)
 
+#define GLIDE_MAX_TMU 3
+
 /*
 ** Control the number of TMUs
 */
@@ -114,7 +116,7 @@ n** -----------------------------------------------------------------------
 #  define GLIDE_NUM_TMU 2
 #endif
 
-#if ( ( GLIDE_NUM_TMU <= 0 ) && ( GLIDE_NUM_TMU > 3 ) )
+#if ( ( GLIDE_NUM_TMU <= 0 ) && ( GLIDE_NUM_TMU > GLIDE_MAX_TMU ) )
 #  error "GLIDE_NUM_TMU set to an invalid value"
 #endif
 

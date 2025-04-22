@@ -1,6 +1,6 @@
 include config.mk
 
-DEPS = config.mk Makefile GLconf.h Glextensions.h GlOgl.h
+DEPS = config.mk Makefile GLconf.h Glextensions.h GlOgl.h OGLCombine.h
 
 # only usefull with gcc/mingw
 CSTD=c99

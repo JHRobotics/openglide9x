@@ -118,12 +118,15 @@ grColorMask( FxBool rgb, FxBool a )
     LeaveGLThread();
 }
 
+#include "OGLCombine.h"
+
 FX_ENTRY void FX_CALL
 grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
                 GrCombineLocal_t local, GrCombineOther_t other,
                 FxBool invert )
 {
-#if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
+//#if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
+#if 1
     GlideMsg( "grColorCombine( %d, %d, %d, %d, %s )\n",
         function, factor, local, other, invert ? "TRUE" : "FALSE" );
 #endif
@@ -133,7 +136,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
  
   for(int tmu = 0; tmu < InternalConfig.NumTMU; tmu++)
   {
-    p_glActiveTextureARB( OGLUnit(tmu) );
+    //p_glActiveTextureARB( OGLUnit(tmu) );
 
     Glide.State.ColorCombineFunction    = function;
     Glide.State.ColorCombineFactor      = factor;
@@ -143,14 +146,16 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     
     Glide.CLocal = colorCombineTable[ factor ][ function ].local;
     Glide.COther = colorCombineTable[ factor ][ function ].other;
-    if ( colorCombineTable[ factor ][ function ].alocal )
+    Glide.ALocal = colorCombineTable[ factor ][ function ].alocal;
+    Glide.AOther = colorCombineTable[ factor ][ function ].aother;
+    /*if ( colorCombineTable[ factor ][ function ].alocal )
     {
         Glide.ALocal = true;
     }
     if ( colorCombineTable[ factor ][ function ].aother )
     {
         Glide.AOther = true;
-    }
+    }*/
     ColorFunctionFunc = colorCombineTable[ factor ][ function ].func;
     ColorFactor3Func = colorCombineTable[ factor ][ function ].factorfunc;
 
@@ -169,7 +174,7 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     {
         OpenGL.tmu[tmu].ColorTexture = false;
     }
-
+#if 0
     if ( ( Glide.State.ColorCombineFactor == GR_COMBINE_FACTOR_TEXTURE_ALPHA ) &&
          ( Glide.State.ColorCombineOther == GR_COMBINE_OTHER_TEXTURE ) )
     {
@@ -193,9 +198,22 @@ grColorCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     {
         DGL(glTexEnvi)( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
     }
+#endif
 
     OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
   }
+  
+/*
+  bool c_texture = !(factor == GR_COMBINE_FACTOR_LOCAL && local == GR_COMBINE_LOCAL_CONSTANT);
+  p_glActiveTextureARB(OGLColorCombineUnit());
+
+	DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_RGB,      GL_MODULATE);
+	DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_RGB,      GL_PRIMARY_COLOR);
+	DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE1_RGB,      c_texture ? GL_PREVIOUS : GL_PRIMARY_COLOR);
+	DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_RGB,     invert ? GL_ONE_MINUS_SRC_COLOR : GL_SRC_COLOR);
+	DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_RGB,     invert ? GL_ONE_MINUS_SRC_COLOR : GL_SRC_COLOR);*/
+
+	OGLColorCombine();
 
   LeaveGLThread();
 }
@@ -457,7 +475,8 @@ grAlphaCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
                 GrCombineLocal_t local, GrCombineOther_t other,
                 FxBool invert )
 {
-#if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
+//#if defined( OGL_PARTDONE ) || defined( OGL_COMBINE )
+#if 1
     GlideMsg( "grAlphaCombine( %d, %d, %d, %d, %s )\n",
         function, factor, local, other, invert ? "TRUE" : "FALSE" );
 #endif
@@ -488,6 +507,16 @@ grAlphaCombine( GrCombineFunction_t function, GrCombineFactor_t factor,
     {
         OpenGL.Texture[tmu] = ( OpenGL.tmu[tmu].ColorTexture || ( OpenGL.Blend && OpenGL.AlphaTexture ) );
     }
+
+/*		p_glActiveTextureARB(OGLColorCombineUnit());
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_COMBINE_ALPHA,    GL_MODULATE);
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE0_ALPHA,    GL_PRIMARY_COLOR);
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_SOURCE1_ALPHA,    GL_PREVIOUS);
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND0_ALPHA,   invert ? GL_ONE_MINUS_SRC_ALPHA : GL_SRC_ALPHA);
+		DGL(glTexEnvi)(GL_TEXTURE_ENV, GL_OPERAND1_ALPHA,   invert ? GL_ONE_MINUS_SRC_ALPHA : GL_SRC_ALPHA);*/
+
+		OGLColorCombine();
+
     LeaveGLThread();
 }
 

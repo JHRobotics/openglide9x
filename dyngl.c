@@ -41,7 +41,8 @@ BOOL dyngl_load()
 	{
 		return TRUE;
 	}
-	
+
+#ifndef DEBUG
 	/*
 		OK, this is a bit thought, some game used wrapper named "opengl32.dll" which
 		call this (glide2x.dll/glide3x.dll) and we cannot load "opengl32.dll",
@@ -86,6 +87,9 @@ BOOL dyngl_load()
 			}
 		}
 	}
+#else
+	dyngl.lib = LoadLibraryA("opengl32.dll");
+#endif
 	
 	if(dyngl.lib == NULL)
 		return FALSE;
